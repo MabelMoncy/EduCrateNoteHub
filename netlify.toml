@@ -1,16 +1,15 @@
 [build]
   command = "npm install"
   publish = "public"
+  functions = "netlify/functions"
 
-[functions]
-  node_bundler = "esbuild"
-  external_node_modules = ["express"]
-
+# This handles the API calls
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/server/:splat"
   status = 200
 
+# This handles the frontend (SPA routing)
 [[redirects]]
   from = "/*"
   to = "/index.html"
