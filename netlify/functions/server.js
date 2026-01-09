@@ -170,9 +170,9 @@ function formatFileSize(bytes) {
 
 // SPA Routing: Serve index.html for all other routes
 app.get('*', (req, res) => {
+    // We go up two levels (../../) to get out of netlify/functions and into the root
     res.sendFile(path.join(__dirname, '../../public/index.html'));
 });
-
 // --- PLATFORM EXPORTS ---
 
 // For Vercel / Standard Node
