@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduCrate | S4 CS2 Resources</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { primary: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1', 600: '#4F46E5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81' } } } }
+        }
+    </script>
+    <style>
+        .shimmer { background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%); background-size: 200% 100%; animation: shim 1.5s infinite; }
+        @keyframes shim { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        .dark .shimmer { background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%); }
+        body.modal-open { overflow: hidden; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 min-h-screen font-sans selection:bg-primary-100 dark:selection:bg-primary-900">
+    
+    <!-- Navigation -->
+    <nav class="fixed top-0 inset-x-0 h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 z-40">
+        <div class="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <button id="menuBtn" class="md:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+                    <svg class="w-6 h-6 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/30">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>
+                    </div>
+                    <span class="text-lg font-bold dark:text-white tracking-tight">EduCrate</span>
+                </div>
+            </div>
+            
+            <div class="flex-1 max-w-md mx-6 relative">
+                <input type="text" id="searchInput" placeholder="Search notes..." class="w-full pl-4 pr-10 py-2 bg-slate-100 dark:bg-slate-800 border-transparent rounded-xl text-sm focus:ring-2 focus:ring-primary-500 dark:text-white transition-all outline-none">
+                <div id="searchResults" class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-2xl hidden z-50 border border-slate-200 dark:border-slate-700 overflow-hidden"></div>
+            </div>
+
+            <button id="themeToggle" class="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors">
+                <svg id="sunIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                <svg id="moonIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+            </button>
+        </div>
+    </nav>
+    
+    <!-- Sidebar -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-30 hidden"></div>
+    <aside id="sidebar" class="fixed left-0 top-16 bottom-0 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-30 -translate-x-full md:translate-x-0 transition-transform duration-300">
+        <div class="p-4 flex flex-col h-full">
+            <h2 class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 px-2">Subjects</h2>
+            <div id="foldersList" class="space-y-1 flex-1 overflow-y-auto">
+                <div class="p-2 space-y-3"><div class="h-9 shimmer rounded-lg"></div><div class="h-9 shimmer rounded-lg"></div></div>
+            </div>
+            <div class="pt-4 border-t border-slate-100 dark:border-slate-800">
+                <p class="text-[10px] text-slate-400 text-center mb-1">CRAFTED FOR S4 CS2</p>
+                <p class="text-xs font-bold text-primary-600 dark:text-primary-400 text-center">Mabel Anto Moncy</p>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="md:ml-64 pt-16 min-h-screen">
+        <div id="contentHeader" class="hidden p-6 md:p-8 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
+            <h1 id="contentTitle" class="text-2xl font-black dark:text-white tracking-tight">Subject</h1>
+        </div>
+        
+        <div class="p-6 md:p-8">
+            <div id="welcomeState" class="flex flex-col items-center justify-center py-24 text-center">
+                <div class="w-20 h-20 bg-primary-50 dark:bg-primary-900/20 text-primary-600 rounded-[2rem] flex items-center justify-center mb-8">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                </div>
+                <h2 class="text-3xl font-extrabold dark:text-white mb-3">Welcome to EduCrate</h2>
+                <p class="text-slate-500 max-w-sm mx-auto leading-relaxed">The dedicated digital library for S4 Computer Science & Engineering Students.</p>
+            </div>
+            
+            <div id="filesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+            <div id="emptyState" class="hidden text-center py-20 text-slate-400 font-medium">No notes uploaded to this section yet.</div>
+        </div>
+    </main>
+    
+    <!-- PDF PROXIED MODAL -->
+    <div id="pdfModal" class="fixed inset-0 z-[100] hidden flex flex-col">
+        <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-md" id="modalBackdrop"></div>
+        <div class="relative flex flex-col h-full w-full bg-white dark:bg-slate-900 overflow-hidden shadow-2xl">
+            <!-- Modal Controls -->
+            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800 z-50">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="bg-red-500 p-1.5 rounded shadow-lg shadow-red-500/20">
+                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
+                    </div>
+                    <h3 id="pdfTitle" class="font-bold dark:text-white truncate text-sm sm:text-base">Document.pdf</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a id="pdfDownload" href="#" download class="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl text-xs font-bold hover:bg-primary-700 hover:scale-105 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        <span>DOWNLOAD</span>
+                    </a>
+                    <button id="closePdfBtn" class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 bg-slate-100 dark:bg-black relative">
+                <div id="pdfLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 z-10">
+                    <div class="w-12 h-12 border-[3px] border-primary-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p class="text-slate-400 text-xs font-bold tracking-widest uppercase">Fetching Document...</p>
+                </div>
+                <iframe id="pdfViewer" class="w-full h-full border-0 relative z-20" src="about:blank"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
