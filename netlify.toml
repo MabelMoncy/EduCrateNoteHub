@@ -1,15 +1,13 @@
 [build]
   command = "npm install"
   publish = "public"
-  functions = "netlify/functions"
+  functions = "api"
 
-# This handles the API calls
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/server/:splat"
+  to = "/.netlify/functions/index/:splat"
   status = 200
 
-# This handles the frontend (SPA routing)
 [[redirects]]
   from = "/*"
   to = "/index.html"
