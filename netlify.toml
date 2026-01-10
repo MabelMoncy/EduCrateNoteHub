@@ -1,13 +1,15 @@
 [build]
   command = "npm install"
   publish = "public"
-  functions = "api"
+  functions = "netlify/functions"
 
+# Map the /api calls to our function
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/index/:splat"
+  to = "/.netlify/functions/api/:splat"
   status = 200
 
+# Ensure the frontend works correctly
 [[redirects]]
   from = "/*"
   to = "/index.html"
