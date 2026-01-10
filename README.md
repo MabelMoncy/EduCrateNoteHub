@@ -2,8 +2,6 @@
 
 <div align="center">
 
-![EduCrate Banner](https://img.shields.io/badge/EduCrate-S4%20CS2%20Resources-6366f1? style=for-the-badge&logo=bookstack&logoColor=white)
-
 **A Modern Digital Library for S4 Computer Science & Engineering Students**
 
 [![Live Demo](https://img.shields.io/badge/Live-Demo-success?style=flat-square&logo=vercel)](https://educrate-kappa.vercel.app)
