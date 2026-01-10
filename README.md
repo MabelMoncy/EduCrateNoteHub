@@ -5,11 +5,6 @@
 **A Modern Digital Library for S4 Computer Science & Engineering Students**
 
 [![Live Demo](https://img.shields.io/badge/Live-Demo-success?style=flat-square&logo=vercel)](https://edunotehub.netlify.app)
-[![License](https://img.shields.io/badge/License-Educational-blue?style=flat-square)](LICENSE)
-[![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow?style=flat-square&logo=javascript)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
-[![Node.js](https://img.shields.io/badge/Node.js-v14+-green?style=flat-square&logo=node.js)](https://nodejs.org/)
-
-[Live Demo](https://educrate-kappa.vercel.app) • [Report Bug](https://github.com/MabelMoncy/EduNotes/issues) • [Request Feature](https://github.com/MabelMoncy/EduNotes/issues)
 
 </div>
 
