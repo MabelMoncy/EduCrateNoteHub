@@ -92,21 +92,13 @@ app.get('/api/search', async (req, res) => {
 // 4. View PDF
 app.get('/api/view/:fileId', (req, res) => {
     const fileId = req.params.fileId;
-    const previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-    res.redirect(previewUrl);
+    // Redirects user to Google's official previewer
+    res.redirect(`https://drive.google.com/file/d/${fileId}/preview`);
 });
-
 // 5. Download PDF
-app.get('/api/download/:fileId', async (req, res) => {
-    try {
-        const drive = initDriveClient();
-        const fileId = req.params.fileId;
-        const meta = await drive.files.get({ fileId, fields: 'name' });
-        const driveRes = await drive.files.get({ fileId, alt: 'media' }, { responseType: 'stream' });
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(meta.data.name)}"`);
-        driveRes.data.pipe(res);
-    } catch (e) { res.status(500).send('Error'); }
+app.get('/api/download/:fileId', (req, res) => {
+    const fileId = req.params.fileId;
+    // Redirects browser to Google's direct download link
+    res.redirect(`https://drive.google.com/uc?export=download&id=${fileId}`);
 });
-
 module.exports.handler = serverless(app);
