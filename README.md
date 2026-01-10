@@ -101,9 +101,7 @@ Git
    Then edit `.env` and add your credentials:
    ```env
    # Google Drive API Configuration
-   GOOGLE_CLIENT_ID=your_client_id_here
-   GOOGLE_CLIENT_SECRET=your_client_secret_here
-   GOOGLE_REFRESH_TOKEN=your_refresh_token_here
+   GOOGLE_SERVICE_ACCOUNT_JSON={"tyepe":"serviceaccount",.......}
    
    # Server Configuration
    PORT=3000
