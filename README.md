@@ -34,7 +34,7 @@
 | **Frontend** | HTML5, Vanilla JavaScript, Tailwind CSS |
 | **Backend** | Node.js, Express.js |
 | **Storage** | Google Drive API |
-| **Deployment** | Vercel, Netlify |
+| **Deployment** | Netlify |
 | **Styling** | Tailwind CSS (CDN) |
 
 ---
@@ -134,7 +134,6 @@ EduNotes/
 ├── . env.example            # Environment variables template
 ├── . gitattributes          # Git attributes configuration
 ├── netlify.toml            # Netlify deployment config
-├── vercel.json             # Vercel deployment config
 ├── package.json            # Project dependencies
 ├── test-drive.js           # Test script
 └── README.md               # Project documentation
@@ -150,15 +149,6 @@ EduNotes/
 
 ### 🚢 Deployment
 
-#### Deploy to Vercel
-
-1. Push your code to GitHub
-2. Import your repository on [Vercel](https://vercel.com)
-3. Add environment variables in Vercel dashboard
-4. Deploy! 
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/MabelMoncy/EduNotes)
-
 #### Deploy to Netlify
 
 1. Connect your repository to [Netlify](https://netlify.com)
@@ -172,7 +162,7 @@ EduNotes/
 
 ## 🌐 Live Demo
 
-**🔗 [View Live Demo](https://educrate-kappa.vercel.app)**
+**🔗 [View Live Demo](https://edunotehub.netlify.app)**
 
 Experience EduCrate in action!  The live demo showcases all features including: 
 
