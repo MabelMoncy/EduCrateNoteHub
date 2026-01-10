@@ -21,31 +21,52 @@
 <body class="bg-slate-50 dark:bg-slate-950 min-h-screen font-sans selection:bg-primary-100 dark:selection:bg-primary-900">
     
     <!-- Navigation -->
-    <nav class="fixed top-0 inset-x-0 h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 z-40">
-        <div class="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <button id="menuBtn" class="md:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
-                    <svg class="w-6 h-6 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    <nav class="fixed top-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 z-[60]">
+    <div class="flex items-center justify-between px-4 h-16 max-w-7xl mx-auto">
+        
+        <!-- Left Section: Menu & Logo -->
+        <div id="logoContainer" class="flex items-center gap-3 transition-all duration-300">
+            <button id="menuBtn" class="md:hidden p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <a href="/" class="flex items-center gap-2.5">
+                <div class="w-9 h-9 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/30">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>
+                </div>
+                <span class="text-lg font-bold text-slate-800 dark:text-white tracking-tight">EduCrate</span>
+            </a>
+        </div>
+
+        <!-- Center Section: Search Bar -->
+        <div id="searchWrapper" class="flex-1 flex justify-end md:justify-center items-center px-2 transition-all duration-300">
+            <!-- Mobile Back Button (Hidden by default) -->
+            <button id="closeSearchBtn" class="hidden p-2 text-slate-500 mr-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+
+            <div class="relative w-full max-w-md">
+                <!-- Mobile Search Trigger Icon -->
+                <button id="mobileSearchTrigger" class="md:hidden p-2.5 text-slate-500 bg-slate-100 dark:bg-slate-800 rounded-xl ml-auto">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </button>
-                <div class="flex items-center gap-2.5">
-                    <div class="w-9 h-9 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/30">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>
-                    </div>
-                    <span class="text-lg font-bold dark:text-white tracking-tight">EduCrate</span>
+
+                <!-- Actual Search Input -->
+                <div id="searchBarContainer" class="hidden md:block relative w-full">
+                    <input type="text" id="searchInput" placeholder="Search notes..." class="w-full pl-4 pr-10 py-2 bg-slate-100 dark:bg-slate-800 border-transparent rounded-xl text-sm focus:ring-2 focus:ring-primary-500 dark:text-white outline-none transition-all">
+                    <div id="searchResults" class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl hidden z-[100] border border-slate-200 dark:border-slate-700 max-h-[70vh] overflow-y-auto"></div>
                 </div>
             </div>
-            
-            <div class="flex-1 max-w-md mx-6 relative">
-                <input type="text" id="searchInput" placeholder="Search notes..." class="w-full pl-4 pr-10 py-2 bg-slate-100 dark:bg-slate-800 border-transparent rounded-xl text-sm focus:ring-2 focus:ring-primary-500 dark:text-white transition-all outline-none">
-                <div id="searchResults" class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-2xl hidden z-50 border border-slate-200 dark:border-slate-700 overflow-hidden"></div>
-            </div>
+        </div>
 
-            <button id="themeToggle" class="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors">
+        <!-- Right Section: Theme Toggle -->
+        <div id="rightNav" class="flex items-center transition-all duration-300">
+            <button id="themeToggle" class="p-2.5 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
                 <svg id="sunIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                 <svg id="moonIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
             </button>
         </div>
-    </nav>
+    </div>
+</nav>
     
     <!-- Sidebar -->
     <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-30 hidden"></div>

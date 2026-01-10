@@ -1,6 +1,6 @@
 const API_BASE = '/api';
 let searchTimeout;
-let cachedFolders = null; // Global cache to prevent reloading
+let cachedFolders = null;
 
 const elements = {
     menuBtn: document.getElementById('menuBtn'),
@@ -12,8 +12,6 @@ const elements = {
     contentTitle: document.getElementById('contentTitle'),
     filesGrid: document.getElementById('filesGrid'),
     emptyState: document.getElementById('emptyState'),
-    searchInput: document.getElementById('searchInput'),
-    searchResults: document.getElementById('searchResults'),
     themeToggle: document.getElementById('themeToggle'),
     sunIcon: document.getElementById('sunIcon'),
     moonIcon: document.getElementById('moonIcon'),
@@ -22,18 +20,26 @@ const elements = {
     pdfViewer: document.getElementById('pdfViewer'),
     pdfLoading: document.getElementById('pdfLoading'),
     closePdfBtn: document.getElementById('closePdfBtn'),
-    pdfDownload: document.getElementById('pdfDownload')
+    pdfDownload: document.getElementById('pdfDownload'),
+    // Search & UI Elements
+    logoContainer: document.getElementById('logoContainer'),
+    mobileSearchTrigger: document.getElementById('mobileSearchTrigger'),
+    searchBarContainer: document.getElementById('searchBarContainer'),
+    closeSearchBtn: document.getElementById('closeSearchBtn'),
+    rightNav: document.getElementById('rightNav'),
+    searchInput: document.getElementById('searchInput'),
+    searchResults: document.getElementById('searchResults')
 };
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
-    loadFolders(); // Load folders once in background
+    loadFolders();
     setupEventListeners();
 });
 
 function setupEventListeners() {
-    // Instant Sidebar Toggle (No Logic Lag)
+    // Sidebar Toggle
     elements.menuBtn.onclick = () => {
         elements.sidebar.classList.remove('-translate-x-full');
         elements.sidebarOverlay.classList.remove('hidden');
@@ -44,12 +50,51 @@ function setupEventListeners() {
         elements.sidebarOverlay.classList.add('hidden');
     };
 
+    // Mobile Search Logic
+    elements.mobileSearchTrigger.onclick = () => toggleMobileSearch(true);
+    elements.closeSearchBtn.onclick = () => toggleMobileSearch(false);
+    
+    // Auto-close search on mobile when a result is clicked
+    elements.searchResults.addEventListener('click', (e) => {
+        if (window.innerWidth < 768) toggleMobileSearch(false);
+    });
+
+    // Hide search results when clicking outside (Desktop/Mobile)
+    document.addEventListener('click', (e) => {
+        if (!elements.searchInput.contains(e.target) && !elements.searchResults.contains(e.target)) {
+            elements.searchResults.classList.add('hidden');
+        }
+    });
+
     elements.themeToggle.onclick = toggleTheme;
     elements.closePdfBtn.onclick = closePdf;
     elements.searchInput.oninput = handleSearch;
 }
 
-// --- THEME ENGINE (INSTANT) ---
+function toggleMobileSearch(isActive) {
+    if (window.innerWidth >= 768) return; 
+
+    if (isActive) {
+        elements.logoContainer.classList.add('hidden');
+        elements.rightNav.classList.add('hidden');
+        elements.mobileSearchTrigger.classList.add('hidden');
+        elements.searchBarContainer.classList.remove('hidden');
+        elements.searchBarContainer.classList.add('block');
+        elements.closeSearchBtn.classList.remove('hidden');
+        elements.searchInput.focus();
+    } else {
+        elements.logoContainer.classList.remove('hidden');
+        elements.rightNav.classList.remove('hidden');
+        elements.mobileSearchTrigger.classList.remove('hidden');
+        elements.searchBarContainer.classList.add('hidden');
+        elements.searchBarContainer.classList.remove('block');
+        elements.closeSearchBtn.classList.add('hidden');
+        elements.searchInput.value = '';
+        elements.searchResults.classList.add('hidden');
+    }
+}
+
+// --- THEME ENGINE ---
 function initTheme() {
     const isDark = localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.classList.toggle('dark', isDark);
@@ -67,19 +112,17 @@ function updateThemeIcons(isDark) {
     elements.moonIcon.classList.toggle('hidden', isDark);
 }
 
-// --- DATA ENGINE (WITH CACHING) ---
+// --- DATA ENGINE ---
 async function loadFolders() {
-    // If we already have folders, don't fetch again
     if (cachedFolders) return renderFolders(cachedFolders);
-
     try {
         const res = await fetch(`${API_BASE}/folders`);
         const data = await res.json();
         if(data.success) {
-            cachedFolders = data.data; // Save to cache
+            cachedFolders = data.data;
             renderFolders(cachedFolders);
         }
-    } catch(e) { console.error("Load Folders Error:", e); }
+    } catch(e) { console.error(e); }
 }
 
 function renderFolders(folders) {
@@ -92,14 +135,12 @@ function renderFolders(folders) {
 }
 
 async function selectFolder(id, name) {
-    // UI Update (Instant)
     elements.welcomeState.classList.add('hidden');
     elements.contentHeader.classList.remove('hidden');
     elements.contentTitle.textContent = name;
     elements.filesGrid.innerHTML = '<div class="h-32 shimmer rounded-2xl"></div>'.repeat(3);
     elements.emptyState.classList.add('hidden');
 
-    // Close sidebar on mobile immediately
     if (window.innerWidth < 768) {
         elements.sidebar.classList.add('-translate-x-full');
         elements.sidebarOverlay.classList.add('hidden');
@@ -138,7 +179,6 @@ function openPdf(file) {
     elements.pdfLoading.classList.remove('hidden');
     elements.pdfViewer.classList.add('hidden');
     
-    // Force reset to prevent previous PDF showing
     elements.pdfViewer.src = 'about:blank';
     setTimeout(() => {
         elements.pdfViewer.src = file.viewUrl;
@@ -156,7 +196,7 @@ function closePdf() {
     elements.pdfViewer.src = 'about:blank';
 }
 
-// --- SEARCH ENGINE (DEBOUNCED) ---
+// --- SEARCH ENGINE ---
 function handleSearch(e) {
     const q = e.target.value.trim();
     clearTimeout(searchTimeout);
@@ -166,7 +206,6 @@ function handleSearch(e) {
         return; 
     }
 
-    // Wait 500ms before calling the server (Prevents lag)
     searchTimeout = setTimeout(async () => {
         try {
             const res = await fetch(`${API_BASE}/search?q=${q}`);
