@@ -36,6 +36,7 @@ app.get('/api/folders', async (req, res) => {
             fields: 'files(id, name)',
             orderBy: 'name',
         });
+        res.setHeader('Cache-Control', 'public, max-age=3600'); 
         res.json({ success: true, data: response.data.files });
     } catch (error) { res.status(500).json({ success: false }); }
 });
