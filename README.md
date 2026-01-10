@@ -236,7 +236,7 @@ This project is created for educational purposes.  Please credit the original au
 ## 🙏 Acknowledgments
 
 - [Tailwind CSS](https://tailwindcss.com/) for the amazing utility-first CSS framework
-- [Vercel](https://vercel.com) for seamless deployment
+- [Netlify](https://netlify.com) for seamless deployment
 - [Google Drive API](https://developers.google.com/drive) for file storage
 - All S4 CS2 students who inspired this project
 
