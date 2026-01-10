@@ -7,7 +7,6 @@ const helmet = require('helmet');
 const app = express();
 
 app.use(cors());
-// Helmet setup to allow Google Drive iframes
 app.use(helmet({
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false
@@ -36,7 +35,7 @@ app.get('/api/folders', async (req, res) => {
             fields: 'files(id, name)',
             orderBy: 'name',
         });
-        res.setHeader('Cache-Control', 'public, max-age=3600'); 
+        res.setHeader('Cache-Control', 'public, max-age=3600');
         res.json({ success: true, data: response.data.files });
     } catch (error) { res.status(500).json({ success: false }); }
 });
@@ -61,33 +60,53 @@ app.get('/api/files/:folderId', async (req, res) => {
     } catch (error) { res.status(500).json({ success: false }); }
 });
 
-// 3. View PDF (The FIX for Blank Pages)
+// 3. Search Route (The Missing Part)
+app.get('/api/search', async (req, res) => {
+    try {
+        const { q } = req.query;
+        if (!q || q.length < 2) return res.json({ success: true, data: [] });
+
+        const drive = initDriveClient();
+        // We search the entire drive for files containing the name
+        const response = await drive.files.list({
+            q: `name contains '${q.replace(/'/g, "\\'")}' and mimeType = 'application/pdf' and trashed = false`,
+            fields: 'files(id, name, size)',
+            pageSize: 10
+        });
+
+        const files = response.data.files.map(f => ({
+            id: f.id,
+            name: f.name,
+            size: (parseInt(f.size) / 1024 / 1024).toFixed(1) + ' MB',
+            viewUrl: `/api/view/${f.id}`,
+            downloadUrl: `/api/download/${f.id}`
+        }));
+
+        res.json({ success: true, data: files });
+    } catch (error) {
+        console.error("Search API Error:", error);
+        res.status(500).json({ success: false });
+    }
+});
+
+// 4. View PDF
 app.get('/api/view/:fileId', (req, res) => {
     const fileId = req.params.fileId;
-    // We redirect to Google's official embeddable previewer.
-    // This is 100% reliable and doesn't hit Netlify's 6MB limit.
     const previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
     res.redirect(previewUrl);
 });
 
-// 4. Download PDF (Proxy remains for downloads)
+// 5. Download PDF
 app.get('/api/download/:fileId', async (req, res) => {
     try {
         const drive = initDriveClient();
         const fileId = req.params.fileId;
         const meta = await drive.files.get({ fileId, fields: 'name' });
-        
-        const driveRes = await drive.files.get(
-            { fileId, alt: 'media' },
-            { responseType: 'stream' }
-        );
-
+        const driveRes = await drive.files.get({ fileId, alt: 'media' }, { responseType: 'stream' });
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(meta.data.name)}"`);
         driveRes.data.pipe(res);
-    } catch (e) {
-        res.status(500).send('Download error');
-    }
+    } catch (e) { res.status(500).send('Error'); }
 });
 
 module.exports.handler = serverless(app);
