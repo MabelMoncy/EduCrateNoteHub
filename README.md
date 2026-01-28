@@ -24,6 +24,22 @@
 - ⚡ **Fast & Lightweight** - Optimized performance with minimal dependencies
 - 🎨 **Modern UI/UX** - Clean, intuitive interface built with Tailwind CSS
 - 🔒 **Google Drive Integration** - Secure file storage and retrieval
+- 🛡️ **Security First** - Input validation, XSS protection, rate limiting, and Content Security Policy
+
+---
+
+## 🔒 Security
+
+This application implements multiple security measures to protect users and data:
+
+- ✅ **Input Validation** - All user inputs are validated and sanitized
+- ✅ **XSS Protection** - HTML escaping and removal of inline event handlers prevent script injection
+- ✅ **Content Security Policy** - Strict CSP headers without unsafe-inline for scripts
+- ⚠️ **Rate Limiting** - Basic rate limiting implemented (may need enhancement for production serverless environments)
+- ✅ **Secure CORS** - Configurable cross-origin resource sharing
+- ✅ **Error Handling** - Secure error messages that don't expose internal details
+
+For detailed security information, see [SECURITY_AUDIT.md](SECURITY_AUDIT.md)
 
 ---
 
