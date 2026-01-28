@@ -83,7 +83,7 @@ Git
 1. **Clone the repository**
    ```bash
    git clone https://github.com/MabelMoncy/EduCrateNoteHub.git
-   cd EduNotes
+   cd EduCrateNoteHub
    ```
 
 2. **Install dependencies**
