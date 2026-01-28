@@ -160,7 +160,7 @@ EduNotes/
 
 ## 🌐 Live Demo
 
-**🔗 [View Live Demo](https://edunotehub.netlify.app)**
+**🔗 [View Live Demo](https://edunoteshub.netlify.app)**
 
 Experience EduCrate in action!  The live demo showcases all features including: 
 
@@ -171,31 +171,6 @@ Experience EduCrate in action!  The live demo showcases all features including:
 ✅ Mobile-responsive interface  
 
 > **Note**: The demo is populated with educational resources for S4 CS2 students.
-
----
-
-## 🎨 Features in Detail
-
-### 🌙 Dark Mode
-Automatic theme detection based on system preferences with manual toggle option.  Theme preference is persisted in localStorage.
-
-### 🔍 Smart Search
-- Debounced search with 500ms delay for optimal performance
-- Minimum 2 characters required to trigger search
-- Results appear in real-time dropdown
-- Highlights PDF files with icons
-
-### 📱 Mobile-First Design
-- Hamburger menu for sidebar navigation
-- Collapsible search bar on mobile
-- Touch-optimized buttons and cards
-- Responsive grid layouts
-
-### 📄 PDF Viewer
-- Proxied PDF viewing for security
-- Loading animations for better UX
-- Direct download functionality
-- Full-screen modal experience
 
 ---
 
