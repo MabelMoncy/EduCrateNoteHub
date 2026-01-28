@@ -4,7 +4,7 @@
 
 **A Modern Digital Library for S4 Computer Science & Engineering Students**
 
-[![Live Demo](https://img.shields.io/badge/Live-Demo-success?style=flat-square&logo=netlify)](https://edunotehub.netlify.app)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-success?style=flat-square&logo=netlify)](https://edunoteshub.netlify.app)
 
 </div>
 
