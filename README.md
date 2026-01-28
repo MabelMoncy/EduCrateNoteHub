@@ -136,23 +136,6 @@ Git
    http://localhost:3000
    ```
 
-### 🗂️ Project Structure
-
-```
-EduNotes/
-├── public/
-│   ├── index.html          # Main HTML file
-│   └── script.js           # Frontend JavaScript
-├── netlify/
-│   └── functions/          # Netlify serverless functions
-├── . env.example            # Environment variables template
-├── . gitattributes          # Git attributes configuration
-├── netlify.toml            # Netlify deployment config
-├── package.json            # Project dependencies
-├── test-drive.js           # Test script
-└── README.md               # Project documentation
-```
-
 ### 🔧 API Endpoints
 
 | Endpoint | Method | Description |
