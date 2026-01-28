@@ -134,11 +134,18 @@ async function loadFolders() {
 
 function renderFolders(folders) {
     elements.foldersList.innerHTML = folders.map(f => `
-        <button onclick="selectFolder('${escapeHtml(f.id)}', '${escapeHtml(f.name)}')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-slate-600 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 transition-all group">
+        <button data-folder-id="${escapeHtml(f.id)}" data-folder-name="${escapeHtml(f.name)}" class="folder-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-slate-600 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 transition-all group">
             <svg class="w-5 h-5 opacity-50 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
             <span class="font-medium text-sm truncate">${escapeHtml(f.name)}</span>
         </button>
     `).join('');
+    
+    // Attach event listeners after rendering
+    document.querySelectorAll('.folder-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            selectFolder(btn.dataset.folderId, btn.dataset.folderName);
+        });
+    });
 }
 
 async function selectFolder(id, name) {
@@ -160,16 +167,10 @@ async function selectFolder(id, name) {
             elements.filesGrid.innerHTML = data.data.map(f => {
                 const escapedName = escapeHtml(f.name.replace('.pdf', ''));
                 const escapedSize = escapeHtml(f.size);
-                const fileDataJson = JSON.stringify({
-                    id: f.id,
-                    name: f.name,
-                    size: f.size,
-                    viewUrl: f.viewUrl,
-                    downloadUrl: f.downloadUrl
-                }).replace(/'/g, '&apos;');
                 
                 return `
-                <div onclick='openPdf(${fileDataJson})' class="cursor-pointer bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:border-primary-400 transition-all group">
+                <div class="file-card cursor-pointer bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:border-primary-400 transition-all group" 
+                     data-file='${JSON.stringify(f).replace(/'/g, '&#39;')}'>
                     <div class="flex items-start gap-4">
                         <div class="p-3 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl group-hover:scale-110 transition-transform">
                             <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6"/></svg>
@@ -181,6 +182,14 @@ async function selectFolder(id, name) {
                     </div>
                 </div>`;
             }).join('');
+            
+            // Attach event listeners after rendering
+            document.querySelectorAll('.file-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const fileData = JSON.parse(card.dataset.file);
+                    openPdf(fileData);
+                });
+            });
         } else {
             elements.filesGrid.innerHTML = '';
             elements.emptyState.classList.remove('hidden');
@@ -238,20 +247,22 @@ function handleSearch(e) {
                 elements.searchResults.classList.remove('hidden');
                 elements.searchResults.innerHTML = data.data.map(f => {
                     const escapedName = escapeHtml(f.name);
-                    const fileDataJson = JSON.stringify({
-                        id: f.id,
-                        name: f.name,
-                        size: f.size,
-                        viewUrl: f.viewUrl,
-                        downloadUrl: f.downloadUrl
-                    }).replace(/'/g, '&apos;');
                     
                     return `
-                    <div onclick='openPdf(${fileDataJson})' class="cursor-pointer p-3 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-3 border-b border-slate-100 dark:border-slate-700 last:border-0 transition-colors">
+                    <div class="search-result cursor-pointer p-3 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-3 border-b border-slate-100 dark:border-slate-700 last:border-0 transition-colors"
+                         data-file='${JSON.stringify(f).replace(/'/g, '&#39;')}'>
                         <svg class="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
                         <span class="text-xs font-medium dark:text-slate-200 truncate">${escapedName}</span>
                     </div>`;
                 }).join('');
+                
+                // Attach event listeners after rendering
+                document.querySelectorAll('.search-result').forEach(result => {
+                    result.addEventListener('click', () => {
+                        const fileData = JSON.parse(result.dataset.file);
+                        openPdf(fileData);
+                    });
+                });
             } else {
                 elements.searchResults.classList.add('hidden');
             }

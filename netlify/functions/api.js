@@ -19,7 +19,7 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com"],
+            scriptSrc: ["'self'", "https://cdn.tailwindcss.com"],
             styleSrc: ["'self'", "'unsafe-inline'"],
             imgSrc: ["'self'", "data:", "https:"],
             connectSrc: ["'self'"],
@@ -108,6 +108,10 @@ app.get('/api/files/:folderId', async (req, res) => {
         }
         
         const drive = initDriveClient();
+        if (!drive) {
+            return res.status(500).json({ success: false, error: 'Drive client initialization failed' });
+        }
+        
         const response = await drive.files.list({
             q: `'${folderId}' in parents and mimeType = 'application/pdf' and trashed = false`,
             fields: 'files(id, name, size)',
@@ -156,6 +160,10 @@ app.get('/api/search', async (req, res) => {
         }
 
         const drive = initDriveClient();
+        if (!drive) {
+            return res.status(500).json({ success: false, error: 'Drive client initialization failed' });
+        }
+        
         // Use sanitized query - no need to escape single quotes as we've removed them
         const response = await drive.files.list({
             q: `name contains '${sanitizedQuery}' and mimeType = 'application/pdf' and trashed = false`,

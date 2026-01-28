@@ -29,16 +29,30 @@ q: `name contains '${q.replace(/'/g, "\\'")}' and mimeType = 'application/pdf'`
 ### 2. **Cross-Site Scripting (XSS) - (HIGH - Fixed)**
 **Location**: `public/script.js` - Multiple locations where file names are rendered
 
-**Issue**: File names from API responses were directly inserted into HTML without escaping, allowing potential XSS attacks.
-```javascript
-// BEFORE (Vulnerable):
-innerHTML = `<span>${f.name}</span>`
-```
+**Issue**: File names from API responses were directly inserted into HTML without escaping, and used in inline onclick handlers which could allow potential XSS attacks.
 
 **Fix**: 
 - Added `escapeHtml()` helper function that properly escapes HTML entities
+- Refactored all inline onclick handlers to use data attributes and addEventListener
 - Applied HTML escaping to all user-controlled data before rendering
-- Properly escaped JSON data in onclick attributes
+- Properly stored JSON data in data attributes for safe retrieval
+
+**Before (Vulnerable)**:
+```javascript
+innerHTML = `<div onclick='openPdf(${JSON.stringify(f)})'>${f.name}</div>`
+```
+
+**After (Secure)**:
+```javascript
+innerHTML = `<div class="file-card" data-file='${JSON.stringify(f).replace(/'/g, '&#39;')}'>${escapeHtml(f.name)}</div>`
+// Then attach event listener via JavaScript
+document.querySelectorAll('.file-card').forEach(card => {
+    card.addEventListener('click', () => {
+        const fileData = JSON.parse(card.dataset.file);
+        openPdf(fileData);
+    });
+});
+```
 
 **Impact**: Prevents malicious scripts from being executed in user browsers
 
@@ -48,32 +62,35 @@ innerHTML = `<span>${f.name}</span>`
 **Location**: `netlify/functions/api.js` (line 10-11)
 
 **Issue**: CSP was completely disabled, removing important XSS protections.
-```javascript
-// BEFORE:
-contentSecurityPolicy: false
-```
 
 **Fix**: Enabled CSP with strict directives:
-- Restricted script sources to self and trusted CDN
+- Restricted script sources to self and trusted CDN (Tailwind)
 - Restricted frame sources to Google Drive only
-- Blocked inline scripts except where necessary
+- Removed 'unsafe-inline' for scripts by refactoring inline event handlers
+- Kept 'unsafe-inline' for styles (required for Tailwind CDN dynamic styles)
+- Blocked object embeds
 - Added upgrade-insecure-requests directive
 
-**Impact**: Adds defense-in-depth against XSS attacks
+**Impact**: Adds defense-in-depth against XSS attacks by preventing execution of unauthorized scripts
 
 ---
 
-### 4. **Missing Rate Limiting (MEDIUM - Fixed)**
+### 4. **Missing Rate Limiting (MEDIUM - Partially Fixed)**
 **Location**: `netlify/functions/api.js`
 
 **Issue**: No rate limiting allowed potential DoS attacks or API abuse.
 
-**Fix**: Implemented rate limiting middleware:
+**Fix**: Implemented basic rate limiting middleware:
 - 30 requests per minute per IP address
 - In-memory store for tracking requests
 - Returns 429 status when limit exceeded
 
-**Impact**: Prevents abuse and reduces server load from malicious actors
+**Limitation**: The in-memory implementation may not persist correctly in serverless environments like Netlify Functions due to their stateless nature. Each function invocation may reset the store. For production use, consider:
+- Using Netlify's built-in rate limiting features
+- Implementing rate limiting at the CDN level (e.g., Cloudflare)
+- Using external storage (Redis, DynamoDB) for distributed rate limiting
+
+**Impact**: Provides basic protection against abuse, though reliability depends on deployment environment
 
 ---
 
