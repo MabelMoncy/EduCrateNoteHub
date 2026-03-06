@@ -199,7 +199,7 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
-// 4. View PDF with validation
+// 4. View PDF with validation - redirects to Google previewer (legacy)
 app.get('/api/view/:fileId', (req, res) => {
     const { fileId } = req.params;
     
@@ -210,6 +210,49 @@ app.get('/api/view/:fileId', (req, res) => {
     
     // Redirects user to Google's official previewer
     res.redirect(`https://drive.google.com/file/d/${fileId}/preview`);
+});
+
+// 4b. Stream PDF bytes for embedded viewer
+app.get('/api/pdf/:fileId', async (req, res) => {
+    const { fileId } = req.params;
+    
+    // Validate fileId format
+    if (!fileId || !/^[a-zA-Z0-9_-]+$/.test(fileId)) {
+        return res.status(400).json({ success: false, error: 'Invalid file ID' });
+    }
+    
+    try {
+        const drive = initDriveClient();
+        if (!drive) {
+            return res.status(500).json({ success: false, error: 'Drive client initialization failed' });
+        }
+        
+        // Get file metadata first to verify it exists and is a PDF
+        const meta = await drive.files.get({ fileId, fields: 'mimeType,name,size' });
+        
+        if (meta.data.mimeType !== 'application/pdf') {
+            return res.status(400).json({ success: false, error: 'File is not a PDF' });
+        }
+        
+        // Stream the file content
+        const response = await drive.files.get(
+            { fileId, alt: 'media' },
+            { responseType: 'stream' }
+        );
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(meta.data.name)}"`);
+        res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+        
+        if (meta.data.size) {
+            res.setHeader('Content-Length', meta.data.size);
+        }
+        
+        response.data.pipe(res);
+    } catch (error) {
+        console.error("PDF Stream Error:", error.message);
+        res.status(500).json({ success: false, error: 'Failed to fetch PDF' });
+    }
 });
 // 5. Download PDF with validation
 app.get('/api/download/:fileId', (req, res) => {

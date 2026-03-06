@@ -2,9 +2,10 @@
 <html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>EduCrate | S4 CS2 Resources</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs" type="module"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -20,6 +21,15 @@
         html, body { overscroll-behavior: none; }
         /* Smooth scrolling for touch devices */
         * { -webkit-tap-highlight-color: transparent; }
+        /* PDF Viewer Styles */
+        #pdfPagesContainer { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+        #pdfPagesContainer::-webkit-scrollbar { width: 8px; }
+        #pdfPagesContainer::-webkit-scrollbar-track { background: transparent; }
+        #pdfPagesContainer::-webkit-scrollbar-thumb { background: rgba(100,100,100,0.3); border-radius: 4px; }
+        #pdfPagesContainer::-webkit-scrollbar-thumb:hover { background: rgba(100,100,100,0.5); }
+        .pdf-page-wrapper { display: flex; justify-content: center; margin-bottom: 8px; }
+        .pdf-page-canvas { max-width: 100%; height: auto !important; box-shadow: 0 2px 8px rgba(0,0,0,0.15); background: white; }
+        .dark .pdf-page-canvas { box-shadow: 0 2px 12px rgba(0,0,0,0.4); }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 min-h-screen font-sans selection:bg-primary-100 dark:selection:bg-primary-900">
@@ -107,47 +117,60 @@
         </div>
     </main>
     
-    <!-- PDF PROXIED MODAL -->
+    <!-- PDF VIEWER MODAL -->
     <div id="pdfModal" class="fixed inset-0 z-[100] hidden flex flex-col">
-        <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-md" id="modalBackdrop"></div>
-        <div class="relative flex flex-col h-full w-full bg-white dark:bg-slate-900 overflow-hidden shadow-2xl">
-            <!-- Modal Controls -->
-            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800 z-50">
-                <div class="flex items-center gap-3 min-w-0">
-                    <div class="bg-red-500 p-1.5 rounded shadow-lg shadow-red-500/20">
-                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
+        <div class="absolute inset-0 bg-slate-950/95 backdrop-blur-sm" id="modalBackdrop"></div>
+        <div class="relative flex flex-col h-full w-full overflow-hidden">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 z-50">
+                <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <div class="bg-red-500 p-1 sm:p-1.5 rounded shadow-lg shadow-red-500/20 flex-shrink-0">
+                        <svg class="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
                     </div>
-                    <h3 id="pdfTitle" class="font-bold dark:text-white truncate text-sm sm:text-base">Document.pdf</h3>
+                    <h3 id="pdfTitle" class="font-bold dark:text-white truncate text-xs sm:text-sm">Document.pdf</h3>
                 </div>
-                <div class="flex items-center gap-2">
-                    <a id="pdfDownload" href="#" download class="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl text-xs font-bold hover:bg-primary-700 hover:scale-105 transition-all">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                        <span>DOWNLOAD</span>
+                <!-- Page Indicator -->
+                <div class="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg mx-2">
+                    <span id="currentPage" class="text-xs sm:text-sm font-bold text-primary-600 dark:text-primary-400">1</span>
+                    <span class="text-xs text-slate-400">/</span>
+                    <span id="totalPages" class="text-xs sm:text-sm font-medium text-slate-500">1</span>
+                </div>
+                <div class="flex items-center gap-1 sm:gap-2">
+                    <a id="pdfDownload" href="#" download class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-primary-600 text-white rounded-lg sm:rounded-xl text-xs font-bold hover:bg-primary-700 transition-all">
+                        <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        <span class="hidden sm:inline">DOWNLOAD</span>
                     </a>
-                    <button id="closePdfBtn" class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <button id="closePdfBtn" class="p-1.5 sm:p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg sm:rounded-xl transition-colors">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
             </div>
 
-            <div class="flex-1 bg-slate-100 dark:bg-black relative overflow-hidden" style="touch-action: pan-x pan-y;">
-                <!-- Mobile: Show buttons instead of heavy iframe -->
-                <div id="mobileViewOptions" class="md:hidden absolute inset-0 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 z-30 p-6 text-center">
-                    <div class="bg-red-50 dark:bg-red-900/20 p-6 rounded-3xl mb-6">
-                        <svg class="w-16 h-16 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6"/></svg>
-                    </div>
-                    <p class="text-slate-500 dark:text-slate-400 text-sm mb-6 max-w-xs">For the best viewing experience on mobile, open the PDF in your browser's native viewer.</p>
-                    <a id="mobileViewBtn" href="#" target="_blank" rel="noopener" class="flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-all mb-3 w-full max-w-xs justify-center">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                        View in Browser
-                    </a>
+            <!-- PDF Pages Container -->
+            <div id="pdfPagesContainer" class="flex-1 overflow-y-auto overflow-x-hidden bg-slate-200 dark:bg-slate-950 p-2 sm:p-4">
+                <!-- Loading State -->
+                <div id="pdfLoading" class="flex flex-col items-center justify-center h-full">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 border-[3px] border-primary-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p class="text-slate-400 text-xs font-bold tracking-widest uppercase mb-2">Loading PDF...</p>
+                    <p id="pdfLoadProgress" class="text-slate-500 text-xs">0%</p>
                 </div>
-                <!-- Desktop: Use iframe -->
-                <div id="pdfLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 z-10">
-                    <div class="w-12 h-12 border-[3px] border-primary-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p class="text-slate-400 text-xs font-bold tracking-widest uppercase">Fetching Document...</p>
-                </div>
-                <iframe id="pdfViewer" class="w-full h-full border-0 relative z-20 hidden md:block" src="about:blank" style="touch-action: manipulation;"></iframe>
+                <!-- Pages will be rendered here -->
+                <div id="pdfPages" class="hidden"></div>
+            </div>
+
+            <!-- Zoom Controls (Floating) -->
+            <div class="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-full shadow-2xl border border-slate-200 dark:border-slate-700 z-50">
+                <button id="zoomOut" class="p-1.5 sm:p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors" title="Zoom Out">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+                </button>
+                <span id="zoomLevel" class="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 min-w-[3rem] text-center">100%</span>
+                <button id="zoomIn" class="p-1.5 sm:p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors" title="Zoom In">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                </button>
+                <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <button id="fitWidth" class="p-1.5 sm:p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors" title="Fit to Width">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                </button>
             </div>
         </div>
     </div>
