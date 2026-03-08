@@ -140,7 +140,7 @@ app.get('/api/files/:folderId', async (req, res) => {
             id: f.id,
             name: f.name,
             size: (parseInt(f.size) / 1024 / 1024).toFixed(1) + ' MB',
-            viewUrl: `/api/view/${f.id}`,
+            viewUrl: `/api/pdf/${f.id}`,
             downloadUrl: `/api/download/${f.id}`,
             thumbnailUrl: f.hasThumbnail ? `/api/thumbnail/${f.id}` : null
         })).sort(naturalSort);
@@ -198,7 +198,7 @@ app.get('/api/search', async (req, res) => {
             id: f.id,
             name: f.name,
             size: (parseInt(f.size) / 1024 / 1024).toFixed(1) + ' MB',
-            viewUrl: `/api/view/${f.id}`,
+            viewUrl: `/api/pdf/${f.id}`,
             downloadUrl: `/api/download/${f.id}`,
             thumbnailUrl: f.hasThumbnail ? `/api/thumbnail/${f.id}` : null
         })).sort(naturalSort);
