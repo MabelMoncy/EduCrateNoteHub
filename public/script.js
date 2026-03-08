@@ -127,10 +127,17 @@ function setupEventListeners() {
         }
     });
     
-    // Hide loading when iframe loads
+    // Hide loading when iframe loads successfully
     elements.pdfIframe.addEventListener('load', () => {
+        if (iframeLoadTimeout) clearTimeout(iframeLoadTimeout);
         elements.pdfLoading.classList.add('hidden');
         elements.pdfIframe.classList.remove('hidden');
+    });
+
+    // Handle iframe loading errors
+    elements.pdfIframe.addEventListener('error', () => {
+        if (iframeLoadTimeout) clearTimeout(iframeLoadTimeout);
+        showPreviewError('Failed to load preview. Please try downloading the file instead.');
     });
     
     // Handle browser back button / swipe-back to close PDF modal
@@ -501,43 +508,93 @@ function handleFileClick(e) {
 }
 
 // --- MODAL ENGINE (Google Drive PDF Viewer - Mobile Optimized) ---
+let iframeLoadTimeout = null;
+
+function showPreviewError(message) {
+    // Hide loading spinner and iframe
+    elements.pdfLoading.classList.add('hidden');
+    elements.pdfIframe.classList.add('hidden');
+
+    // Show error message in the loading area
+    const loadingDiv = elements.pdfLoading;
+    const originalHTML = loadingDiv.innerHTML;
+
+    loadingDiv.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-full px-4">
+            <svg class="w-12 h-12 sm:w-16 sm:h-16 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <p class="text-slate-600 dark:text-slate-400 text-sm sm:text-base text-center mb-2 font-semibold">${message}</p>
+            <p class="text-slate-500 dark:text-slate-500 text-xs text-center mb-4">Use the download button above to save the file.</p>
+        </div>
+    `;
+    loadingDiv.classList.remove('hidden');
+
+    // Store original HTML to restore later
+    loadingDiv.dataset.originalHTML = originalHTML;
+}
+
 function openPdf(file) {
     if (!file || typeof file !== 'object') {
         console.error('Invalid file data');
         return;
     }
-    
+
     document.body.classList.add('modal-open');
     elements.pdfModal.classList.remove('hidden');
     elements.pdfTitle.textContent = file.name || 'Unknown';
-    
+
     // Store file data for download handler
     elements.pdfDownload.dataset.fileId = file.id;
     elements.pdfDownload.dataset.fileName = file.name || 'document.pdf';
     elements.pdfDownload.href = '#'; // Prevent default navigation
     elements.pdfDownload.removeAttribute('download'); // Remove download attr, handled via JS
-    
+
     // Reset viewer state
+    const loadingDiv = elements.pdfLoading;
+    if (loadingDiv.dataset.originalHTML) {
+        loadingDiv.innerHTML = loadingDiv.dataset.originalHTML;
+        delete loadingDiv.dataset.originalHTML;
+    }
     elements.pdfLoading.classList.remove('hidden');
     elements.pdfIframe.classList.add('hidden');
     elements.pdfIframe.src = '';
-    
+
+    // Clear any existing timeout
+    if (iframeLoadTimeout) clearTimeout(iframeLoadTimeout);
+
+    // Set timeout to detect if preview fails to load (15 seconds)
+    iframeLoadTimeout = setTimeout(() => {
+        if (!elements.pdfIframe.classList.contains('hidden')) {
+            // Iframe is visible but might be stuck
+            return;
+        }
+        // Loading spinner still showing after 15 seconds - likely failed
+        showPreviewError('Preview is taking too long to load.');
+    }, 15000);
+
     // Use Google Drive's built-in PDF preview - works great on mobile
     // Format: https://drive.google.com/file/d/{fileId}/preview
     const previewUrl = `https://drive.google.com/file/d/${file.id}/preview`;
     elements.pdfIframe.src = previewUrl;
-    
+
     // Push history state so back button/swipe closes the modal instead of leaving the site
     history.pushState({ pdfOpen: true }, '');
 }
 
 function closePdf(fromPopState) {
+    // Clear timeout if still running
+    if (iframeLoadTimeout) {
+        clearTimeout(iframeLoadTimeout);
+        iframeLoadTimeout = null;
+    }
+
     document.body.classList.remove('modal-open');
     elements.pdfModal.classList.add('hidden');
     elements.pdfLoading.classList.add('hidden');
     elements.pdfIframe.classList.add('hidden');
     elements.pdfIframe.src = ''; // Clear iframe to stop loading/playing
-    
+
     // If closed via X button or Escape (not from back swipe), pop the history entry we pushed
     if (!fromPopState && history.state && history.state.pdfOpen) {
         history.back();
