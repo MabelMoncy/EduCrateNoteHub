@@ -72,11 +72,16 @@ For detailed security information, see [SECURITY_AUDIT.md](SECURITY_AUDIT.md)
    - Click on any note card to open it in the built-in viewer
    - The viewer loads with a smooth animation
 
-4. **Download** ⬇️
+4. **Share Deep Links** 🔗
+   - Every folder has a shareable URL: `/?folder=<folderId>`
+   - Every PDF uses a deep link: `/?folder=<folderId>&file=<fileId>`
+   - Open a folder or PDF, copy the browser URL, and share/bookmark it; recipients land on the same folder or directly inside the PDF viewer
+
+5. **Download** ⬇️
    - Use the "DOWNLOAD" button in the PDF viewer
    - Files are downloaded directly from secure storage
 
-5. **Toggle Theme** 🌓
+6. **Toggle Theme** 🌓
    - Click the moon/sun icon to switch between dark and light modes
    - Your preference is saved automatically
 
