@@ -68,11 +68,41 @@ const elements = {
     themeColorMeta: document.querySelector('meta[name="theme-color"]')
 };
 
+// --- URL HELPERS ---
+function getUrlState() {
+    const params = new URLSearchParams(window.location.search);
+    const folderId = params.get('folder');
+    const fileId = params.get('file');
+    return {
+        folderId: folderId && folderId.trim() ? folderId.trim() : null,
+        fileId: fileId && fileId.trim() ? fileId.trim() : null
+    };
+}
+
+function buildAppUrl(folderId, fileId) {
+    const params = new URLSearchParams();
+    if (folderId) params.set('folder', folderId);
+    if (fileId) params.set('file', fileId);
+    const query = params.toString();
+    return query ? `${window.location.pathname}?${query}` : window.location.pathname;
+}
+
+function replaceUrlState(folderId, fileId) {
+    const url = buildAppUrl(folderId, fileId);
+    history.replaceState(history.state, '', url);
+}
+
+function pushFileState(folderId, fileId) {
+    const url = buildAppUrl(folderId, fileId);
+    history.pushState({ pdfOpen: true, folderId, fileId }, '', url);
+}
+
 // --- INITIALIZATION ---
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     initTheme();
-    loadFolders();
     setupEventListeners();
+    await loadFolders();
+    await hydrateFromUrl();
 });
 
 function setupEventListeners() {
@@ -141,10 +171,45 @@ function setupEventListeners() {
         elements.pdfIframe.classList.remove('hidden');
     });
     
-    // Handle browser back button / swipe-back to close PDF modal
-    window.addEventListener('popstate', (e) => {
+    // Handle browser back/forward for deep links and PDF modal
+    window.addEventListener('popstate', async () => {
+        const { folderId, fileId } = getUrlState();
+        
+        if (fileId) {
+            const folderReady = await ensureFolderSelectedById(folderId, { skipUrlSync: true });
+            if (!folderReady) {
+                closePdf(true);
+                replaceUrlState(null, null);
+                return;
+            }
+            
+            let files = cachedFiles[folderId] || [];
+            let targetFile = files.find(f => f.id === fileId);
+            if (!targetFile) {
+                delete cachedFiles[folderId];
+                await selectFolder(folderId, (cachedFolders || []).find(f => f.id === folderId)?.name || '', { skipUrlSync: true });
+                files = cachedFiles[folderId] || [];
+                targetFile = files.find(f => f.id === fileId);
+            }
+            if (targetFile) openPdf(targetFile, { skipHistoryPush: true, skipUrlSync: true });
+            return;
+        }
+
         if (!elements.pdfModal.classList.contains('hidden')) {
             closePdf(true); // true = already popped, don't pop again
+        }
+
+        if (folderId) {
+            await ensureFolderSelectedById(folderId, { skipUrlSync: true });
+        } else {
+            replaceUrlState(null, null);
+            currentFolderId = null;
+            currentFolderName = null;
+            stopFilePolling();
+            elements.contentHeader.classList.add('hidden');
+            elements.filesGrid.innerHTML = '';
+            elements.emptyState.classList.add('hidden');
+            elements.welcomeState.classList.remove('hidden');
         }
     });
     
@@ -232,6 +297,36 @@ async function loadFolders() {
     } catch(e) { console.error(e); }
 }
 
+async function ensureFolderSelectedById(folderId, options = {}) {
+    if (!folderId) return false;
+    if (folderId === currentFolderId && cachedFiles[folderId]) return true;
+    const target = (cachedFolders || []).find(f => f.id === folderId);
+    if (!target) return false;
+    await selectFolder(folderId, target.name, options);
+    return true;
+}
+
+async function hydrateFromUrl() {
+    const { folderId, fileId } = getUrlState();
+    if (!folderId) return;
+    const folderReady = await ensureFolderSelectedById(folderId, { skipUrlSync: true });
+    if (!folderReady) return;
+    // Create a base history entry for the folder so Back closes the PDF
+    replaceUrlState(folderId, null);
+
+    if (fileId) {
+        const files = cachedFiles[folderId] || [];
+        let targetFile = files.find(f => f.id === fileId);
+        if (!targetFile) {
+            delete cachedFiles[folderId];
+            await selectFolder(folderId, (cachedFolders || []).find(f => f.id === folderId)?.name || '', { skipUrlSync: true });
+            const refreshed = cachedFiles[folderId] || [];
+            targetFile = refreshed.find(f => f.id === fileId);
+        }
+        if (targetFile) openPdf(targetFile);
+    }
+}
+
 // --- AUTO-SYNC POLLING ENGINE ---
 function startFolderPolling() {
     if (folderPollTimer) clearInterval(folderPollTimer);
@@ -265,6 +360,7 @@ async function pollFolders() {
                 if (currentFolderId && !newFolders.find(f => f.id === currentFolderId)) {
                     currentFolderId = null;
                     currentFolderName = null;
+                    replaceUrlState(null, null);
                     stopFilePolling();
                     elements.contentHeader.classList.add('hidden');
                     elements.filesGrid.innerHTML = '';
@@ -335,13 +431,16 @@ function handleFolderClick(e) {
     if (btn) selectFolder(btn.dataset.folderId, btn.dataset.folderName);
 }
 
-async function selectFolder(id, name) {
+async function selectFolder(id, name, options = {}) {
     currentFolderId = id; // Track for refresh
     currentFolderName = name; // Track for refresh
     elements.welcomeState.classList.add('hidden');
     elements.contentHeader.classList.remove('hidden');
     elements.contentTitle.textContent = name;
     elements.emptyState.classList.add('hidden');
+    if (!options.skipUrlSync) {
+        replaceUrlState(id, null);
+    }
     
     // Start polling files for this folder
     startFilePolling();
@@ -484,7 +583,7 @@ function renderFiles(files) {
     const html = files.map(f => {
         const escapedName = escapeHtml(f.name.replace('.pdf', ''));
         const escapedSize = escapeHtml(f.size);
-        const fileJson = JSON.stringify(f).replace(/'/g, '&#39;');
+        const fileJson = JSON.stringify({ ...f, folderId: currentFolderId }).replace(/'/g, '&#39;');
         
         const thumbnailHtml = f.thumbnailUrl 
             ? '<div class="w-full aspect-[16/9] bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden mb-3">' +
@@ -516,7 +615,7 @@ function handleFileClick(e) {
 }
 
 // --- MODAL ENGINE (Google Drive PDF Viewer - Mobile Optimized) ---
-function openPdf(file) {
+function openPdf(file, options = {}) {
     if (!file || typeof file !== 'object') {
         console.error('Invalid file data');
         return;
@@ -550,9 +649,13 @@ function openPdf(file) {
             elements.pdfIframe.src = drivePreviewUrl;
         }
     }, 8000);
-    
-    // Push history state so back button/swipe closes the modal instead of leaving the site
-    history.pushState({ pdfOpen: true }, '');
+
+    const folderForUrl = currentFolderId || file.folderId || null;
+    if (!options.skipHistoryPush) {
+        pushFileState(folderForUrl, file.id);
+    } else if (!options.skipUrlSync) {
+        replaceUrlState(folderForUrl, file.id);
+    }
 }
 
 function closePdf(fromPopState) {
@@ -567,8 +670,12 @@ function closePdf(fromPopState) {
     elements.pdfIframe.src = ''; // Clear iframe to stop loading/playing
     
     // If closed via X button or Escape (not from back swipe), pop the history entry we pushed
-    if (!fromPopState && history.state && history.state.pdfOpen) {
-        history.back();
+    if (!fromPopState) {
+        if (history.state && history.state.pdfOpen) {
+            history.back();
+        } else {
+            replaceUrlState(currentFolderId, null);
+        }
     }
 }
 
