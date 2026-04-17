@@ -8,8 +8,6 @@ let currentFolderId = null; // Track current folder for refresh
 let currentFolderName = null; // Track current folder name
 let folderPollTimer = null; // Auto-poll timer for folders
 let filePollTimer = null; // Auto-poll timer for files
-let pdfLoadFallbackTimer = null; // Fallback timer when inline PDF stream is slow/unavailable
-const PDF_STREAM_FALLBACK_MS = 15000;
 const FOLDER_POLL_INTERVAL = 60000; // Poll folders every 60 seconds
 const FILE_POLL_INTERVAL = 30000; // Poll files every 30 seconds
 
@@ -164,20 +162,11 @@ function setupEventListeners() {
     
     // Hide loading when iframe loads
     elements.pdfIframe.addEventListener('load', () => {
-        if (pdfLoadFallbackTimer) {
-            clearTimeout(pdfLoadFallbackTimer);
-            pdfLoadFallbackTimer = null;
-        }
         elements.pdfLoading.classList.add('hidden');
         elements.pdfIframe.classList.remove('hidden');
     });
     
     elements.pdfIframe.addEventListener('error', () => {
-        if (pdfLoadFallbackTimer) {
-            clearTimeout(pdfLoadFallbackTimer);
-            pdfLoadFallbackTimer = null;
-        }
-
         const driveUrl = elements.pdfIframe.dataset.driveUrl;
         if (driveUrl && elements.pdfIframe.src !== driveUrl) {
             elements.pdfIframe.src = driveUrl;
@@ -660,19 +649,6 @@ function openPdf(file, options = {}) {
     elements.pdfIframe.dataset.driveUrl = drivePreviewUrl;
     elements.pdfIframe.src = streamPreviewUrl;
 
-    if (pdfLoadFallbackTimer) {
-        clearTimeout(pdfLoadFallbackTimer);
-    }
-    pdfLoadFallbackTimer = setTimeout(() => {
-        if (
-            !elements.pdfModal.classList.contains('hidden') &&
-            elements.pdfIframe.classList.contains('hidden') &&
-            elements.pdfIframe.src === streamPreviewUrl
-        ) {
-            elements.pdfIframe.src = drivePreviewUrl;
-        }
-    }, PDF_STREAM_FALLBACK_MS);
-
     const folderForUrl = currentFolderId || file.folderId || null;
     if (!options.skipHistoryPush) {
         pushFileState(folderForUrl, file.id);
@@ -682,10 +658,6 @@ function openPdf(file, options = {}) {
 }
 
 function closePdf(fromPopState) {
-    if (pdfLoadFallbackTimer) {
-        clearTimeout(pdfLoadFallbackTimer);
-        pdfLoadFallbackTimer = null;
-    }
     document.body.classList.remove('modal-open');
     elements.pdfModal.classList.add('hidden');
     elements.pdfLoading.classList.add('hidden');
