@@ -9,6 +9,7 @@ let currentFolderName = null; // Track current folder name
 let folderPollTimer = null; // Auto-poll timer for folders
 let filePollTimer = null; // Auto-poll timer for files
 let pdfLoadFallbackTimer = null; // Fallback timer when inline PDF stream is slow/unavailable
+const PDF_STREAM_FALLBACK_MS = 15000;
 const FOLDER_POLL_INTERVAL = 60000; // Poll folders every 60 seconds
 const FILE_POLL_INTERVAL = 30000; // Poll files every 30 seconds
 
@@ -167,6 +168,22 @@ function setupEventListeners() {
             clearTimeout(pdfLoadFallbackTimer);
             pdfLoadFallbackTimer = null;
         }
+        elements.pdfLoading.classList.add('hidden');
+        elements.pdfIframe.classList.remove('hidden');
+    });
+    
+    elements.pdfIframe.addEventListener('error', () => {
+        if (pdfLoadFallbackTimer) {
+            clearTimeout(pdfLoadFallbackTimer);
+            pdfLoadFallbackTimer = null;
+        }
+
+        const driveUrl = elements.pdfIframe.dataset.driveUrl;
+        if (driveUrl && elements.pdfIframe.src !== driveUrl) {
+            elements.pdfIframe.src = driveUrl;
+            return;
+        }
+
         elements.pdfLoading.classList.add('hidden');
         elements.pdfIframe.classList.remove('hidden');
     });
@@ -639,16 +656,22 @@ function openPdf(file, options = {}) {
     // Prefer in-app stream preview first. If it takes too long, fall back to Drive preview.
     const streamPreviewUrl = file.viewUrl || `${API_BASE}/pdf/${encodeURIComponent(file.id)}`;
     const drivePreviewUrl = `${API_BASE}/view/${encodeURIComponent(file.id)}`;
+    elements.pdfIframe.dataset.streamUrl = streamPreviewUrl;
+    elements.pdfIframe.dataset.driveUrl = drivePreviewUrl;
     elements.pdfIframe.src = streamPreviewUrl;
 
     if (pdfLoadFallbackTimer) {
         clearTimeout(pdfLoadFallbackTimer);
     }
     pdfLoadFallbackTimer = setTimeout(() => {
-        if (!elements.pdfModal.classList.contains('hidden') && elements.pdfIframe.classList.contains('hidden')) {
+        if (
+            !elements.pdfModal.classList.contains('hidden') &&
+            elements.pdfIframe.classList.contains('hidden') &&
+            elements.pdfIframe.src === streamPreviewUrl
+        ) {
             elements.pdfIframe.src = drivePreviewUrl;
         }
-    }, 8000);
+    }, PDF_STREAM_FALLBACK_MS);
 
     const folderForUrl = currentFolderId || file.folderId || null;
     if (!options.skipHistoryPush) {
@@ -668,6 +691,8 @@ function closePdf(fromPopState) {
     elements.pdfLoading.classList.add('hidden');
     elements.pdfIframe.classList.add('hidden');
     elements.pdfIframe.src = ''; // Clear iframe to stop loading/playing
+    delete elements.pdfIframe.dataset.streamUrl;
+    delete elements.pdfIframe.dataset.driveUrl;
     
     // If closed via X button or Escape (not from back swipe), pop the history entry we pushed
     if (!fromPopState) {

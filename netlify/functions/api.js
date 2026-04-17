@@ -215,8 +215,6 @@ const FOLDER_OR_SHORTCUT_TO_FOLDER_QUERY =
 const DRIVE_LIST_PAGE_SIZE = 1000;
 const DRIVE_PARENT_QUERY_BATCH_SIZE = 20;
 const MAX_RECURSIVE_FOLDER_SCAN = 500;
-const FUNCTION_MAX_RESPONSE_BYTES = Number.parseInt(process.env.FUNCTION_MAX_RESPONSE_BYTES || '4500000', 10);
-
 let cachedDriveClient = null;
 let cachedAuth = null;
 
@@ -521,6 +519,7 @@ app.get('/api/view/:fileId', (req, res) => {
 
 app.get('/api/pdf/:fileId', async (req, res) => {
     const { fileId } = req.params;
+    const rangeHeader = req.headers.range;
     if (!isValidDriveId(fileId)) {
         res.status(400).json({ success: false, error: 'Invalid file ID' });
         return;
@@ -545,25 +544,48 @@ app.get('/api/pdf/:fileId', async (req, res) => {
         }
 
         const fileSizeBytes = Number.parseInt(meta.data.size, 10);
-        if (Number.isFinite(fileSizeBytes) && fileSizeBytes > FUNCTION_MAX_RESPONSE_BYTES) {
-            res.redirect(302, `https://drive.google.com/file/d/${fileId}/preview`);
-            return;
+        const baseHeaders = {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename="${encodeURIComponent(meta.data.name)}"`,
+            'Cache-Control': 'public, max-age=86400',
+            'Accept-Ranges': 'bytes'
+        };
+
+        let driveResponse;
+        if (rangeHeader && Number.isFinite(fileSizeBytes)) {
+            const matches = rangeHeader.match(/bytes=(\d*)-(\d*)/i);
+            const start = matches && matches[1] ? Number.parseInt(matches[1], 10) : 0;
+            const end = matches && matches[2] ? Number.parseInt(matches[2], 10) : fileSizeBytes - 1;
+
+            if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || end >= fileSizeBytes) {
+                res.status(416).setHeader('Content-Range', `bytes */${fileSizeBytes}`);
+                res.end();
+                return;
+            }
+
+            const chunkSize = end - start + 1;
+            driveResponse = await driveClient.files.get(
+                { fileId, alt: 'media', supportsAllDrives: true },
+                { responseType: 'stream', headers: { Range: `bytes=${start}-${end}` } }
+            );
+
+            res.status(206);
+            res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSizeBytes}`);
+            res.setHeader('Content-Length', chunkSize);
+        } else {
+            driveResponse = await driveClient.files.get(
+                { fileId, alt: 'media', supportsAllDrives: true },
+                { responseType: 'stream' }
+            );
+
+            if (Number.isFinite(fileSizeBytes)) {
+                res.setHeader('Content-Length', meta.data.size);
+            }
         }
 
-        const response = await driveClient.files.get(
-            { fileId, alt: 'media', supportsAllDrives: true },
-            { responseType: 'stream' }
-        );
+        Object.entries(baseHeaders).forEach(([key, value]) => res.setHeader(key, value));
 
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(meta.data.name)}"`);
-        res.setHeader('Cache-Control', 'public, max-age=86400');
-
-        if (meta.data.size) {
-            res.setHeader('Content-Length', meta.data.size);
-        }
-
-        pipeline(response.data, res, (streamError) => {
+        pipeline(driveResponse.data, res, (streamError) => {
             if (streamError) {
                 console.error('PDF stream pipeline error:', streamError.message);
                 if (!res.headersSent) {
