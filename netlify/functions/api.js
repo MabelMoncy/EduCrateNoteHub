@@ -160,23 +160,42 @@ const runtimeOriginCandidates = [process.env.URL, process.env.DEPLOY_PRIME_URL, 
 const runtimeOrigins = runtimeOriginCandidates.map(normalizeOrigin).filter(Boolean);
 const allowedOrigins = new Set([...configuredOrigins, ...runtimeOrigins].map(normalizeOrigin).filter(Boolean));
 
-app.use(cors({
-    origin(origin, callback) {
-        if (!origin) {
-            callback(null, true);
-            return;
-        }
-        const normalizedOrigin = normalizeOrigin(origin);
-        if (allowedOrigins.has(normalizedOrigin)) {
-            callback(null, true);
-            return;
-        }
-        callback(new Error('Origin not allowed by CORS'));
-    },
+const corsBaseOptions = {
     methods: ['GET', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: false,
     maxAge: 86400
+};
+
+app.use(cors((req, callback) => {
+    const origin = req.header('origin');
+    if (!origin) {
+        callback(null, { ...corsBaseOptions, origin: true });
+        return;
+    }
+
+    const normalizedOrigin = normalizeOrigin(origin);
+    if (allowedOrigins.has(normalizedOrigin)) {
+        callback(null, { ...corsBaseOptions, origin: true });
+        return;
+    }
+
+    const parsedOrigin = parseUrlSafe(origin);
+    const forwardedHost = typeof req.headers['x-forwarded-host'] === 'string' ? req.headers['x-forwarded-host'] : '';
+    const hostHeader = forwardedHost || req.headers.host || '';
+    const requestHost = hostHeader.split(',')[0].trim().toLowerCase();
+    const forwardedProto = typeof req.headers['x-forwarded-proto'] === 'string' ? req.headers['x-forwarded-proto'] : '';
+    const reqProtocol = (forwardedProto.split(',')[0].trim() || req.protocol || '').toLowerCase();
+
+    const isSameHost = parsedOrigin && requestHost && parsedOrigin.host.toLowerCase() === requestHost;
+    const isSameProtocol = !reqProtocol || (parsedOrigin && parsedOrigin.protocol === `${reqProtocol}:`);
+
+    if (isSameHost && isSameProtocol) {
+        callback(null, { ...corsBaseOptions, origin: true });
+        return;
+    }
+
+    callback(new Error('Origin not allowed by CORS'));
 }));
 
 app.use(helmet({
