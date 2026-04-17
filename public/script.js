@@ -11,6 +11,8 @@ let filePollTimer = null; // Auto-poll timer for files
 let pdfLoadFallbackTimer = null; // Fallback timer when inline PDF stream is slow/unavailable
 const FOLDER_POLL_INTERVAL = 60000; // Poll folders every 60 seconds
 const FILE_POLL_INTERVAL = 30000; // Poll files every 30 seconds
+const CACHE_KEY = 'educrate-cache-v1';
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
 // Update isMobile on resize (debounced)
 let resizeTimeout;
@@ -68,6 +70,49 @@ const elements = {
     themeColorMeta: document.querySelector('meta[name="theme-color"]')
 };
 
+function readPersistedState() {
+    try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed.timestamp || Date.now() - parsed.timestamp > CACHE_TTL_MS) {
+            localStorage.removeItem(CACHE_KEY);
+            return null;
+        }
+        if (!Array.isArray(parsed.folders)) return null;
+        return {
+            folders: parsed.folders,
+            files: parsed.files && typeof parsed.files === 'object' ? parsed.files : {}
+        };
+    } catch (err) {
+        console.warn('Unable to read cache', err);
+        return null;
+    }
+}
+
+function persistState() {
+    try {
+        if (!cachedFolders || !Array.isArray(cachedFolders)) return;
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+            timestamp: Date.now(),
+            folders: cachedFolders,
+            files: cachedFiles
+        }));
+    } catch (err) {
+        console.warn('Unable to persist cache', err);
+    }
+}
+
+function hydrateFromCache() {
+    const cachedState = readPersistedState();
+    if (!cachedState) return;
+    cachedFolders = cachedState.folders;
+    cachedFiles = cachedState.files || {};
+    if (cachedFolders.length) {
+        renderFolders(cachedFolders);
+    }
+}
+
 // --- URL HELPERS ---
 function getUrlState() {
     const params = new URLSearchParams(window.location.search);
@@ -100,7 +145,9 @@ function pushFileState(folderId, fileId) {
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', async () => {
     initTheme();
+    hydrateFromCache();
     setupEventListeners();
+    await hydrateFromUrl();
     await loadFolders();
     await hydrateFromUrl();
 });
@@ -281,18 +328,17 @@ function updateThemeColor(isDark) {
 
 // --- DATA ENGINE ---
 async function loadFolders() {
-    if (cachedFolders) {
+    if (cachedFolders && cachedFolders.length) {
         renderFolders(cachedFolders);
-        startFolderPolling(); // Start polling even if cached
-        return;
     }
+    startFolderPolling();
     try {
         const res = await fetch(API_BASE + '/folders');
         const data = await res.json();
         if(data.success) {
             cachedFolders = data.data.sort(naturalSort);
             renderFolders(cachedFolders);
-            startFolderPolling();
+            persistState();
         }
     } catch(e) { console.error(e); }
 }
@@ -346,6 +392,7 @@ function stopFilePolling() {
 }
 
 async function pollFolders() {
+    if (document.hidden) return;
     try {
         const res = await fetch(API_BASE + '/folders', {
             headers: { 'Cache-Control': 'no-cache' }
@@ -356,6 +403,7 @@ async function pollFolders() {
             if (!areFoldersEqual(cachedFolders, newFolders)) {
                 cachedFolders = newFolders;
                 renderFolders(cachedFolders);
+                persistState();
                 // If a folder was deleted that we're currently viewing, go back to welcome
                 if (currentFolderId && !newFolders.find(f => f.id === currentFolderId)) {
                     currentFolderId = null;
@@ -373,7 +421,7 @@ async function pollFolders() {
 }
 
 async function pollFiles() {
-    if (!currentFolderId) return;
+    if (document.hidden || !currentFolderId) return;
     try {
         const res = await fetch(API_BASE + '/files/' + currentFolderId, {
             headers: { 'Cache-Control': 'no-cache' }
@@ -383,6 +431,7 @@ async function pollFiles() {
             const newFiles = data.data.sort(naturalSort);
             if (!areFilesEqual(cachedFiles[currentFolderId], newFiles)) {
                 cachedFiles[currentFolderId] = newFiles;
+                persistState();
                 if (newFiles.length > 0) {
                     renderFiles(newFiles);
                     elements.emptyState.classList.add('hidden');
@@ -464,7 +513,10 @@ async function selectFolder(id, name, options = {}) {
             const sortedFiles = data.data.sort(naturalSort);
             cachedFiles[id] = sortedFiles;
             renderFiles(sortedFiles);
+            persistState();
         } else {
+            cachedFiles[id] = [];
+            persistState();
             elements.filesGrid.innerHTML = '';
             elements.emptyState.classList.remove('hidden');
         }
