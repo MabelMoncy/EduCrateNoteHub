@@ -322,10 +322,15 @@
                 </div>
                 <h2 class="text-3xl font-extrabold dark:text-white mb-3">Welcome to EduCrate</h2>
                 <p class="text-slate-500 max-w-sm mx-auto leading-relaxed mb-6">The dedicated digital library for S4 Computer Science & Engineering Students.</p>
-                <button id="browseSubjectsBtn" class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 hover:scale-105 transition-all shadow-lg shadow-primary-500/30 active:scale-95">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-                    Browse Subjects
-                </button>
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <button id="browseSubjectsBtn" class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 hover:scale-105 transition-all shadow-lg shadow-primary-500/30 active:scale-95">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                        Browse Subjects
+                    </button>
+                    <a href="https://model.ktunotes.live/s4" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 hover:scale-105 transition-all shadow-lg shadow-red-500/30 active:scale-95">
+                        KTU S4 Model Question Papers
+                    </a>
+                </div>
             </div>
             
             <div id="filesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
