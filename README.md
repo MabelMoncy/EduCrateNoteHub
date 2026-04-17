@@ -158,8 +158,6 @@ Git
 3. Add environment variables in Netlify dashboard
 4. Deploy!
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/MabelMoncy/EduCrateNoteHub)
-
 #### GitHub Actions CI/CD
 
 This repository includes automated workflows in `.github/workflows/`:
