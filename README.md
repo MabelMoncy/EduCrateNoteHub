@@ -10,6 +10,11 @@
 
 ---
 
+## Gallery
+<img width="1920" height="1080" alt="Screenshot From 2026-04-19 15-14-26" src="https://github.com/user-attachments/assets/d895ff8f-4740-45d7-9cbc-2ea28ff7d3e2" />
+<img width="1920" height="1080" alt="Screenshot From 2026-04-19 15-14-46" src="https://github.com/user-attachments/assets/6aa8463b-2f24-4fe9-a003-ceabb3236ccb" />
+
+
 ## 📖 About
 
 **EduCrate** is a modern, elegant digital library designed specifically for S4 Computer Science & Engineering students. Built with simplicity and accessibility in mind, this web application provides a centralized hub for storing, organizing, and accessing course materials, lecture notes, and study resources.
