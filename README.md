@@ -11,8 +11,9 @@
 ---
 
 ## Gallery
-<img width="1920" height="1080" alt="Screenshot From 2026-04-19 15-14-26" src="https://github.com/user-attachments/assets/d895ff8f-4740-45d7-9cbc-2ea28ff7d3e2" />
-<img width="1920" height="1080" alt="Screenshot From 2026-04-19 15-14-46" src="https://github.com/user-attachments/assets/6aa8463b-2f24-4fe9-a003-ceabb3236ccb" />
+<img width="1914" height="1031" alt="Screenshot From 2026-04-19 15-14-46" src="https://github.com/user-attachments/assets/cca12bab-c43e-4df1-837f-cda6af5ccc45" />
+<img width="1920" height="1037" alt="Screenshot From 2026-04-19 15-14-26" src="https://github.com/user-attachments/assets/fb3afc98-7584-427e-83d7-1364d5e1db58" />
+
 
 
 ## 📖 About
