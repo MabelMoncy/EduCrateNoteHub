@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "compression": "^1.8.1",
-    "cors": "^2.8.5",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^4.22.1",
     "googleapis": "^126.0.1",
