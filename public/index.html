@@ -350,11 +350,11 @@
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h1 id="contentTitle" class="text-2xl font-black dark:text-white tracking-tight">Subject</h1>
                 <div id="sortContainer" class="hidden flex items-center gap-2">
-                    <label for="sortSelect" class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Date Modified</label>
-                    <select id="sortSelect" class="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm dark:text-white outline-none focus:ring-2 focus:ring-primary-500">
-                        <option value="newToOld">New to old</option>
-                        <option value="oldToNew">Old to new</option>
-                    </select>
+                    <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Sort Files</span>
+                    <div id="sortButtons" class="inline-flex p-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                        <button type="button" data-sort="newToOld" class="sort-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all">New to old</button>
+                        <button type="button" data-sort="oldToNew" class="sort-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all">Old to new</button>
+                    </div>
                 </div>
             </div>
         </div>

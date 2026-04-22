@@ -70,7 +70,7 @@ const elements = {
     themeColorMeta: document.querySelector('meta[name="theme-color"]'),
     lcpImagePreload: document.getElementById('lcpImagePreload'),
     sortContainer: document.getElementById('sortContainer'),
-    sortSelect: document.getElementById('sortSelect')
+    sortButtons: document.getElementById('sortButtons')
 };
 
 function updateLcpImagePreload(url) {
@@ -177,8 +177,8 @@ function setupEventListeners() {
     elements.searchInput.addEventListener('input', handleSearch, { passive: true });
     elements.searchInput.addEventListener('keydown', handleSearchKeydown);
 
-    if (elements.sortSelect) {
-        elements.sortSelect.addEventListener('change', handleSortChange, { passive: true });
+    if (elements.sortButtons) {
+        elements.sortButtons.addEventListener('click', handleSortChange, { passive: true });
     }
     
     // Pull-to-refresh for mobile
@@ -463,10 +463,29 @@ function sortFilesByModified(files, order = currentSortOrder) {
 }
 
 function handleSortChange(e) {
-    currentSortOrder = e.target.value === 'oldToNew' ? 'oldToNew' : 'newToOld';
+    const button = e.target.closest('[data-sort]');
+    if (!button) return;
+
+    currentSortOrder = button.dataset.sort === 'oldToNew' ? 'oldToNew' : 'newToOld';
+    updateSortButtonsUI();
+
     if (currentFolderId && cachedFiles[currentFolderId]) {
         renderFiles(sortFilesByModified(cachedFiles[currentFolderId]));
     }
+}
+
+function updateSortButtonsUI() {
+    if (!elements.sortButtons) return;
+
+    const buttons = elements.sortButtons.querySelectorAll('[data-sort]');
+    buttons.forEach((button) => {
+        const isActive = button.dataset.sort === currentSortOrder;
+        button.classList.toggle('bg-primary-600', isActive);
+        button.classList.toggle('text-white', isActive);
+        button.classList.toggle('shadow-sm', isActive);
+        button.classList.toggle('text-slate-600', !isActive);
+        button.classList.toggle('dark:text-slate-300', !isActive);
+    });
 }
 
 function setSortVisibility(visible) {
@@ -500,9 +519,7 @@ async function selectFolder(id, name, options = {}) {
     elements.welcomeState.classList.add('hidden');
     elements.contentHeader.classList.remove('hidden');
     setSortVisibility(true);
-    if (elements.sortSelect) {
-        elements.sortSelect.value = currentSortOrder;
-    }
+    updateSortButtonsUI();
     elements.contentTitle.textContent = name;
     elements.emptyState.classList.add('hidden');
     updateLcpImagePreload(null);
