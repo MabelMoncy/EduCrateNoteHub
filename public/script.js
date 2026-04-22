@@ -65,8 +65,18 @@ const elements = {
     browseSubjectsBtn: document.getElementById('browseSubjectsBtn'),
     pullRefreshIndicator: document.getElementById('pullRefreshIndicator'),
     pullRefreshText: document.getElementById('pullRefreshText'),
-    themeColorMeta: document.querySelector('meta[name="theme-color"]')
+    themeColorMeta: document.querySelector('meta[name="theme-color"]'),
+    lcpImagePreload: document.getElementById('lcpImagePreload')
 };
+
+function updateLcpImagePreload(url) {
+    if (!elements.lcpImagePreload) return;
+    if (!url) {
+        elements.lcpImagePreload.removeAttribute('href');
+        return;
+    }
+    elements.lcpImagePreload.setAttribute('href', url);
+}
 
 // --- URL HELPERS ---
 function getUrlState() {
@@ -438,6 +448,7 @@ async function selectFolder(id, name, options = {}) {
     elements.contentHeader.classList.remove('hidden');
     elements.contentTitle.textContent = name;
     elements.emptyState.classList.add('hidden');
+    updateLcpImagePreload(null);
     if (!options.skipUrlSync) {
         replaceUrlState(id, null);
     }
@@ -455,7 +466,14 @@ async function selectFolder(id, name, options = {}) {
         return;
     }
 
-    elements.filesGrid.innerHTML = '<div class="h-32 shimmer rounded-2xl"></div>'.repeat(isMobile ? 2 : 3);
+    const skeletonCount = isMobile ? 2 : 3;
+    elements.filesGrid.innerHTML = Array.from({ length: skeletonCount }, () =>
+        '<div class="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800">' +
+            '<div class="thumbnail-shell shimmer rounded-xl mb-3"></div>' +
+            '<div class="h-4 shimmer rounded mb-2"></div>' +
+            '<div class="h-3 w-20 shimmer rounded"></div>' +
+        '</div>'
+    ).join('');
 
     try {
         const res = await fetch(API_BASE + '/files/' + id);
@@ -580,16 +598,21 @@ async function performFullRefresh() {
 }
 
 function renderFiles(files) {
-    const html = files.map(f => {
+    const lcpIndex = files.findIndex(file => file.thumbnailUrl);
+    updateLcpImagePreload(lcpIndex === -1 ? null : files[lcpIndex].thumbnailUrl);
+
+    const html = files.map((f, index) => {
         const escapedName = escapeHtml(f.name.replace('.pdf', ''));
         const escapedSize = escapeHtml(f.size);
         const fileJson = JSON.stringify({ ...f, folderId: currentFolderId }).replace(/'/g, '&#39;');
+        const isLcpImage = index === lcpIndex;
+        const imageLoadingAttrs = isLcpImage ? 'fetchpriority="high"' : 'loading="lazy"';
         
         const thumbnailHtml = f.thumbnailUrl 
-            ? '<div class="w-full aspect-[16/9] bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden mb-3">' +
-                '<img src="' + escapeHtml(f.thumbnailUrl) + '" alt="' + escapedName + '" class="w-full h-full object-cover object-top" loading="lazy" decoding="async" onerror="this.parentElement.innerHTML=\'<div class=\\\'flex items-center justify-center h-full text-red-400\\\'><svg class=\\\'w-12 h-12\\\' fill=\\\'currentColor\\\' viewBox=\\\'0 0 24 24\\\'><path d=\\\'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z\\\'/><path d=\\\'M14 2v6h6\\\'/></svg></div>\'">' +
+            ? '<div class="thumbnail-shell bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden mb-3">' +
+                '<img src="' + escapeHtml(f.thumbnailUrl) + '" alt="' + escapedName + '" width="320" height="180" class="w-full h-full object-cover object-top" ' + imageLoadingAttrs + ' decoding="async" onerror="this.parentElement.innerHTML=\'<div class=\\\'flex items-center justify-center h-full text-red-400\\\'><svg class=\\\'w-12 h-12\\\' fill=\\\'currentColor\\\' viewBox=\\\'0 0 24 24\\\'><path d=\\\'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z\\\'/><path d=\\\'M14 2v6h6\\\'/></svg></div>\'">' +
               '</div>'
-            : '<div class="w-full aspect-[16/9] bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden mb-3 flex items-center justify-center text-red-400">' +
+            : '<div class="thumbnail-shell bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden mb-3 flex items-center justify-center text-red-400">' +
                 '<svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6"/></svg>' +
               '</div>';
         
