@@ -253,6 +253,18 @@
             outline: none;
         }
 
+        @media (max-width: 640px) {
+            #sortContainer {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            #sortSelect {
+                min-width: 10rem;
+                max-width: 100%;
+            }
+        }
+
         #sortSelect:focus {
             border-color: rgba(99, 102, 241, 0.65) !important;
             box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.28);
@@ -374,7 +386,7 @@
         <div id="contentHeader" class="hidden p-6 md:p-8 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h1 id="contentTitle" class="text-2xl font-black dark:text-white tracking-tight">Subject</h1>
-                <div id="sortContainer" class="hidden flex items-center gap-2">
+                <div id="sortContainer" class="hidden w-full sm:w-auto flex items-center sm:justify-end gap-2">
                     <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Sort Files</span>
                     <select id="sortSelect" class="transition-all">
                         <option value="newToOld">New to old</option>
