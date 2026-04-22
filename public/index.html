@@ -257,10 +257,12 @@
             #sortContainer {
                 width: 100%;
                 justify-content: space-between;
+                align-items: center;
             }
 
             #sortSelect {
-                min-width: 10rem;
+                min-width: 9rem;
+                width: 9rem;
                 max-width: 100%;
             }
         }
@@ -385,8 +387,8 @@
     <main class="md:ml-64 pt-16 min-h-screen">
         <div id="contentHeader" class="hidden p-6 md:p-8 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <h1 id="contentTitle" class="text-2xl font-black dark:text-white tracking-tight">Subject</h1>
-                <div id="sortContainer" class="hidden w-full sm:w-auto flex items-center sm:justify-end gap-2">
+                <h1 id="contentTitle" class="text-2xl font-black dark:text-white tracking-tight leading-tight whitespace-nowrap overflow-hidden text-ellipsis sm:flex-1 sm:min-w-0">Subject</h1>
+                <div id="sortContainer" class="hidden w-full sm:w-auto flex items-center justify-between sm:justify-end gap-2 sm:shrink-0">
                     <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Sort Files</span>
                     <select id="sortSelect" class="transition-all">
                         <option value="newToOld">New to old</option>
