@@ -351,10 +351,15 @@
                 <h1 id="contentTitle" class="text-2xl font-black dark:text-white tracking-tight">Subject</h1>
                 <div id="sortContainer" class="hidden flex items-center gap-2">
                     <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Sort Files</span>
-                    <select id="sortSelect" class="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm dark:text-white outline-none focus:ring-2 focus:ring-primary-500">
-                        <option value="newToOld">New to old</option>
-                        <option value="oldToNew">Old to new</option>
-                    </select>
+                    <div class="relative">
+                        <select id="sortSelect" class="appearance-none px-3 pr-10 py-2 rounded-xl border border-primary-400/60 dark:border-primary-400/70 bg-white/90 dark:bg-slate-900/90 text-sm font-semibold text-slate-700 dark:text-slate-100 shadow-sm backdrop-blur outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all">
+                            <option value="newToOld">New to old</option>
+                            <option value="oldToNew">Old to new</option>
+                        </select>
+                        <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-500 dark:text-slate-300">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
