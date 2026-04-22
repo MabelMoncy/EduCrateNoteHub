@@ -42,7 +42,7 @@
 | **Frontend** | HTML5, Vanilla JavaScript, Tailwind CSS |
 | **Backend** | Node.js, Express.js |
 | **Storage** | Google Drive API |
-| **Deployment** | Netlify |
+| **Deployment** | Netlify, Vercel|
 | **Styling** | Tailwind CSS (CDN) |
 
 ---
