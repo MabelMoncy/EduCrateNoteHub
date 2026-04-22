@@ -10,17 +10,32 @@
     <link rel="icon" href="/favicon_io/favicon.ico" sizes="any">
     <link rel="manifest" href="/favicon_io/site.webmanifest">
     <meta name="theme-color" content="#ffffff">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link id="lcpImagePreload" rel="preload" as="image">
+    <script src="https://cdn.tailwindcss.com" defer></script>
     <script>
+        window.tailwind = window.tailwind || {};
         tailwind.config = {
             darkMode: 'class',
             theme: { extend: { colors: { primary: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1', 600: '#4F46E5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81' } } } }
         }
     </script>
     <style>
-        .shimmer { background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%); background-size: 200% 100%; animation: shim 1.5s infinite; }
-        @keyframes shim { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-        .dark .shimmer { background: linear-gradient(90deg, #131b4a 25%, #1a2560 50%, #131b4a 75%); }
+        .shimmer { position: relative; overflow: hidden; background-color: #f1f5f9; }
+        .shimmer::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            transform: translateX(-100%);
+            background: linear-gradient(90deg, transparent 0%, rgba(226, 232, 240, 0.9) 50%, transparent 100%);
+            animation: shim 1.5s infinite;
+            will-change: transform;
+        }
+        @keyframes shim { to { transform: translateX(100%); } }
+        .dark .shimmer { background-color: #131b4a; }
+        .dark .shimmer::after { background: linear-gradient(90deg, transparent 0%, rgba(42, 57, 125, 0.75) 50%, transparent 100%); }
+        #foldersList { min-height: 16rem; }
+        .main-content-shell { min-height: calc(100vh - 4rem); }
+        .thumbnail-shell { width: 100%; aspect-ratio: 16 / 9; }
         body.modal-open { overflow: hidden; }
         /* Smooth scrolling for touch devices */
         * { -webkit-tap-highlight-color: transparent; }
@@ -344,7 +359,7 @@
             <h1 id="contentTitle" class="text-2xl font-black dark:text-white tracking-tight">Subject</h1>
         </div>
         
-        <div class="p-6 md:p-8">
+        <div class="p-6 md:p-8 main-content-shell">
             <div id="welcomeState" class="flex flex-col items-center justify-center py-24 text-center">
                 <div class="w-20 h-20 rounded-[2rem] flex items-center justify-center mb-8 overflow-hidden">
                     <img src="/logo.png" alt="EduCrate" width="80" height="80" class="w-full h-full object-cover" loading="lazy" decoding="async">
@@ -409,6 +424,6 @@
         <span id="pullRefreshText" class="text-xs font-bold text-slate-500 dark:text-slate-400">Pull to refresh</span>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js" defer></script>
 </body>
 </html>
