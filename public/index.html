@@ -10,15 +10,8 @@
     <link rel="icon" href="/favicon_io/favicon.ico" sizes="any">
     <link rel="manifest" href="/favicon_io/site.webmanifest">
     <meta name="theme-color" content="#ffffff">
-    <link id="lcpImagePreload" rel="preload" as="image">
-    <script src="https://cdn.tailwindcss.com" defer></script>
-    <script>
-        window.tailwind = window.tailwind || {};
-        tailwind.config = {
-            darkMode: 'class',
-            theme: { extend: { colors: { primary: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1', 600: '#4F46E5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81' } } } }
-        }
-    </script>
+    <link id="lcpImagePreload" rel="preload" as="image" href="/logo.png">
+    <link rel="stylesheet" href="/styles.css">
     <style>
         .shimmer { position: relative; overflow: hidden; background-color: #f1f5f9; }
         .shimmer::after {
@@ -36,6 +29,10 @@
         #foldersList { min-height: 16rem; }
         .main-content-shell { min-height: calc(100vh - 4rem); }
         .thumbnail-shell { width: 100%; aspect-ratio: 16 / 9; }
+        #searchWrapper { min-height: 2.75rem; }
+        #searchBarContainer { min-height: 2.5rem; }
+        #searchResults { min-height: 3rem; }
+        #pdfContainer { min-height: 50vh; }
         body.modal-open { overflow: hidden; }
         /* Smooth scrolling for touch devices */
         * { -webkit-tap-highlight-color: transparent; }
@@ -139,23 +136,17 @@
         @keyframes neonZoomPulse {
             0%, 100% {
                 transform: scale(1);
-                box-shadow:
-                    0 0 8px rgba(239, 68, 68, 0.65),
-                    0 0 16px rgba(239, 68, 68, 0.45),
-                    0 10px 24px rgba(239, 68, 68, 0.28);
+                opacity: 1;
             }
             50% {
                 transform: scale(1.04);
-                box-shadow:
-                    0 0 14px rgba(248, 113, 113, 0.85),
-                    0 0 26px rgba(239, 68, 68, 0.62),
-                    0 14px 30px rgba(239, 68, 68, 0.36);
+                opacity: 0.9;
             }
         }
 
         .neon-cta {
             animation: neonZoomPulse 1.8s ease-in-out infinite;
-            will-change: transform, box-shadow;
+            will-change: transform, opacity;
         }
 
         .neon-cta:hover {
@@ -294,7 +285,7 @@
     <div class="flex items-center justify-between px-4 h-16 max-w-7xl mx-auto">
         
         <!-- Left Section: Menu & Logo -->
-        <div id="logoContainer" class="flex items-center gap-3 transition-all duration-300">
+        <div id="logoContainer" class="flex items-center gap-3 transition-[transform,opacity] duration-300">
             <button id="menuBtn" aria-label="Open sidebar" class="md:hidden p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
@@ -304,9 +295,9 @@
         </div>
 
         <!-- Center Section: Search Bar -->
-        <div id="searchWrapper" class="flex-1 flex justify-end md:justify-center items-center px-2 transition-all duration-300">
+        <div id="searchWrapper" class="flex-1 flex justify-end md:justify-center items-center px-2 transition-[transform,opacity] duration-300">
             <!-- Mobile Back Button (Hidden by default) -->
-            <button id="closeSearchBtn" aria-label="Close search" class="hidden p-2 text-slate-500 mr-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all">
+            <button id="closeSearchBtn" aria-label="Close search" class="hidden p-2 text-slate-500 mr-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors duration-300">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             </button>
 
@@ -320,12 +311,12 @@
         </div>
 
         <!-- Right Section: Theme Toggle -->
-        <div id="rightNav" class="flex items-center gap-1 transition-all duration-300">
+        <div id="rightNav" class="flex items-center gap-1 transition-[transform,opacity] duration-300">
             <!-- Mobile Search Trigger Icon -->
-            <button id="mobileSearchTrigger" aria-label="Open search" class="md:hidden p-2.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all">
+            <button id="mobileSearchTrigger" aria-label="Open search" class="md:hidden p-2.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors duration-300">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             </button>
-            <button id="themeToggle" aria-label="Toggle theme" class="p-2.5 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+            <button id="themeToggle" aria-label="Toggle theme" class="p-2.5 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors duration-300">
                 <svg id="sunIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                 <svg id="moonIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
             </button>
