@@ -293,6 +293,7 @@ function mapDriveFileToApiFile(file) {
         id: resolvedId,
         name: file.name,
         size: formatFileSize(file.size),
+        modifiedTime: file.modifiedTime || null,
         viewUrl: `/api/pdf/${resolvedId}`,
         downloadUrl: `/api/download/${resolvedId}`,
         thumbnailUrl: `/api/thumbnail/${resolvedId}`
@@ -339,7 +340,7 @@ async function listPdfFilesAcrossParents(driveClient, parentIds) {
         const parentQuery = parentChunk.map((id) => `'${id}' in parents`).join(' or ');
         const files = await listDriveFilesPaginated(driveClient, {
             q: `(${parentQuery}) and ${PDF_OR_SHORTCUT_QUERY} and trashed = false`,
-            fields: 'nextPageToken, files(id, name, size, mimeType, shortcutDetails(targetId,targetMimeType))',
+            fields: 'nextPageToken, files(id, name, size, modifiedTime, mimeType, shortcutDetails(targetId,targetMimeType))',
             orderBy: 'name'
         });
         allFiles.push(...files);
@@ -508,7 +509,7 @@ app.get('/api/search', async (req, res) => {
 
         const response = await driveClient.files.list({
             q: `name contains '${sanitizedQuery}' and ${PDF_OR_SHORTCUT_QUERY} and trashed = false`,
-            fields: 'files(id, name, size, mimeType, shortcutDetails(targetId,targetMimeType))',
+            fields: 'files(id, name, size, modifiedTime, mimeType, shortcutDetails(targetId,targetMimeType))',
             pageSize: 20,
             corpora: 'allDrives',
             supportsAllDrives: true,

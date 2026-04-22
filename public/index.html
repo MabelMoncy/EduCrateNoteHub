@@ -347,7 +347,16 @@
     <!-- Main Content -->
     <main class="md:ml-64 pt-16 min-h-screen">
         <div id="contentHeader" class="hidden p-6 md:p-8 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
-            <h1 id="contentTitle" class="text-2xl font-black dark:text-white tracking-tight">Subject</h1>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h1 id="contentTitle" class="text-2xl font-black dark:text-white tracking-tight">Subject</h1>
+                <div id="sortContainer" class="hidden flex items-center gap-2">
+                    <label for="sortSelect" class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Date Modified</label>
+                    <select id="sortSelect" class="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm dark:text-white outline-none focus:ring-2 focus:ring-primary-500">
+                        <option value="newToOld">New to old</option>
+                        <option value="oldToNew">Old to new</option>
+                    </select>
+                </div>
+            </div>
         </div>
         
         <div class="p-6 md:p-8 main-content-shell">
