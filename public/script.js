@@ -464,6 +464,7 @@ function sortFilesByModified(files, order = currentSortOrder) {
 
 function handleSortChange(e) {
     currentSortOrder = e.target.value === 'oldToNew' ? 'oldToNew' : 'newToOld';
+
     if (currentFolderId && cachedFiles[currentFolderId]) {
         renderFiles(sortFilesByModified(cachedFiles[currentFolderId]));
     }
