@@ -6,6 +6,7 @@ let activeSearchIndex = -1;
 let isMobile = window.innerWidth < 768;
 let currentFolderId = null; // Track current folder for refresh
 let currentFolderName = null; // Track current folder name
+let currentSortOrder = 'newToOld'; // Date modified sort order
 let folderPollTimer = null; // Auto-poll timer for folders
 let filePollTimer = null; // Auto-poll timer for files
 let pdfLoadFallbackTimer = null; // Fallback timer when inline PDF stream is slow/unavailable
@@ -67,7 +68,9 @@ const elements = {
     pullRefreshIndicator: document.getElementById('pullRefreshIndicator'),
     pullRefreshText: document.getElementById('pullRefreshText'),
     themeColorMeta: document.querySelector('meta[name="theme-color"]'),
-    lcpImagePreload: document.getElementById('lcpImagePreload')
+    lcpImagePreload: document.getElementById('lcpImagePreload'),
+    sortContainer: document.getElementById('sortContainer'),
+    sortSelect: document.getElementById('sortSelect')
 };
 
 function updateLcpImagePreload(url) {
@@ -173,6 +176,10 @@ function setupEventListeners() {
     }, { passive: true });
     elements.searchInput.addEventListener('input', handleSearch, { passive: true });
     elements.searchInput.addEventListener('keydown', handleSearchKeydown);
+
+    if (elements.sortSelect) {
+        elements.sortSelect.addEventListener('change', handleSortChange, { passive: true });
+    }
     
     // Pull-to-refresh for mobile
     setupPullToRefresh();
@@ -229,6 +236,7 @@ function setupEventListeners() {
             currentFolderId = null;
             currentFolderName = null;
             stopFilePolling();
+            setSortVisibility(false);
             elements.contentHeader.classList.add('hidden');
             elements.filesGrid.innerHTML = '';
             elements.emptyState.classList.add('hidden');
@@ -385,6 +393,7 @@ async function pollFolders() {
                     currentFolderName = null;
                     replaceUrlState(null, null);
                     stopFilePolling();
+                    setSortVisibility(false);
                     elements.contentHeader.classList.add('hidden');
                     elements.filesGrid.innerHTML = '';
                     elements.emptyState.classList.add('hidden');
@@ -407,7 +416,7 @@ async function pollFiles() {
             if (!areFilesEqual(cachedFiles[currentFolderId], newFiles)) {
                 cachedFiles[currentFolderId] = newFiles;
                 if (newFiles.length > 0) {
-                    renderFiles(newFiles);
+                    renderFiles(sortFilesByModified(newFiles));
                     elements.emptyState.classList.add('hidden');
                 } else {
                     elements.filesGrid.innerHTML = '';
@@ -429,9 +438,40 @@ function areFoldersEqual(a, b) {
 function areFilesEqual(a, b) {
     if (!a || !b || a.length !== b.length) return false;
     for (let i = 0; i < a.length; i++) {
-        if (a[i].id !== b[i].id || a[i].name !== b[i].name || a[i].size !== b[i].size) return false;
+        if (
+            a[i].id !== b[i].id ||
+            a[i].name !== b[i].name ||
+            a[i].size !== b[i].size ||
+            (a[i].modifiedTime || '') !== (b[i].modifiedTime || '')
+        ) return false;
     }
     return true;
+}
+
+function getModifiedTimestamp(file) {
+    const ts = Date.parse(file?.modifiedTime || '');
+    return Number.isFinite(ts) ? ts : 0;
+}
+
+function sortFilesByModified(files, order = currentSortOrder) {
+    const direction = order === 'oldToNew' ? 1 : -1;
+    return [...files].sort((a, b) => {
+        const timeDiff = getModifiedTimestamp(a) - getModifiedTimestamp(b);
+        if (timeDiff !== 0) return timeDiff * direction;
+        return naturalSort(a, b);
+    });
+}
+
+function handleSortChange(e) {
+    currentSortOrder = e.target.value === 'oldToNew' ? 'oldToNew' : 'newToOld';
+    if (currentFolderId && cachedFiles[currentFolderId]) {
+        renderFiles(sortFilesByModified(cachedFiles[currentFolderId]));
+    }
+}
+
+function setSortVisibility(visible) {
+    if (!elements.sortContainer) return;
+    elements.sortContainer.classList.toggle('hidden', !visible);
 }
 
 function renderFolders(folders) {
@@ -459,6 +499,10 @@ async function selectFolder(id, name, options = {}) {
     currentFolderName = name; // Track for refresh
     elements.welcomeState.classList.add('hidden');
     elements.contentHeader.classList.remove('hidden');
+    setSortVisibility(true);
+    if (elements.sortSelect) {
+        elements.sortSelect.value = currentSortOrder;
+    }
     elements.contentTitle.textContent = name;
     elements.emptyState.classList.add('hidden');
     updateLcpImagePreload(null);
@@ -475,7 +519,7 @@ async function selectFolder(id, name, options = {}) {
     }
 
     if (cachedFiles[id]) {
-        renderFiles(cachedFiles[id]);
+        renderFiles(sortFilesByModified(cachedFiles[id]));
         return;
     }
 
@@ -494,7 +538,7 @@ async function selectFolder(id, name, options = {}) {
         if(data.success && data.data.length > 0) {
             const sortedFiles = data.data.sort(naturalSort);
             cachedFiles[id] = sortedFiles;
-            renderFiles(sortedFiles);
+            renderFiles(sortFilesByModified(sortedFiles));
         } else {
             elements.filesGrid.innerHTML = '';
             elements.emptyState.classList.remove('hidden');
@@ -598,7 +642,7 @@ async function performFullRefresh() {
             if (data.success && data.data.length > 0) {
                 const sortedFiles = data.data.sort(naturalSort);
                 cachedFiles[currentFolderId] = sortedFiles;
-                renderFiles(sortedFiles);
+                renderFiles(sortFilesByModified(sortedFiles));
                 elements.emptyState.classList.add('hidden');
             } else {
                 elements.filesGrid.innerHTML = '';
