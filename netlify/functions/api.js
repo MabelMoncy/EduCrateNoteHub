@@ -202,7 +202,7 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", 'https://cdn.tailwindcss.com', 'https://www.gstatic.com'],
+            scriptSrc: ["'self'", 'https://www.gstatic.com'],
             styleSrc: ["'self'", "'unsafe-inline'"],
             imgSrc: ["'self'", 'data:', 'https:'],
             connectSrc: ["'self'", 'https://*.googleapis.com', 'https://securetoken.googleapis.com'],

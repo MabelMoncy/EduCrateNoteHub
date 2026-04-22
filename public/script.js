@@ -9,6 +9,7 @@ let currentFolderName = null; // Track current folder name
 let folderPollTimer = null; // Auto-poll timer for folders
 let filePollTimer = null; // Auto-poll timer for files
 let pdfLoadFallbackTimer = null; // Fallback timer when inline PDF stream is slow/unavailable
+let fileRenderToken = 0; // Cancels stale chunked file renders
 const FOLDER_POLL_INTERVAL = 60000; // Poll folders every 60 seconds
 const FILE_POLL_INTERVAL = 30000; // Poll files every 30 seconds
 
@@ -78,6 +79,14 @@ function updateLcpImagePreload(url) {
     elements.lcpImagePreload.setAttribute('href', url);
 }
 
+function scheduleNonBlockingTask(callback) {
+    if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(callback, { timeout: 120 });
+        return;
+    }
+    setTimeout(() => callback(), 0);
+}
+
 // --- URL HELPERS ---
 function getUrlState() {
     const params = new URLSearchParams(window.location.search);
@@ -109,6 +118,10 @@ function pushFileState(folderId, fileId) {
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', async () => {
+    const { fileId } = getUrlState();
+    if (fileId) {
+        updateLcpImagePreload(`${API_BASE}/thumbnail/${encodeURIComponent(fileId)}`);
+    }
     initTheme();
     setupEventListeners();
     await loadFolders();
@@ -601,35 +614,64 @@ function renderFiles(files) {
     const lcpIndex = files.findIndex(file => file.thumbnailUrl);
     updateLcpImagePreload(lcpIndex === -1 ? null : files[lcpIndex].thumbnailUrl);
 
-    const html = files.map((f, index) => {
-        const escapedName = escapeHtml(f.name.replace('.pdf', ''));
-        const escapedSize = escapeHtml(f.size);
-        const fileJson = JSON.stringify({ ...f, folderId: currentFolderId }).replace(/'/g, '&#39;');
-        const isLcpImage = index === lcpIndex;
-        const imageLoadingAttrs = isLcpImage ? 'fetchpriority="high"' : 'loading="lazy"';
-        
-        const thumbnailHtml = f.thumbnailUrl 
-            ? '<div class="thumbnail-shell bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden mb-3">' +
-                '<img src="' + escapeHtml(f.thumbnailUrl) + '" alt="' + escapedName + '" width="320" height="180" class="w-full h-full object-cover object-top" ' + imageLoadingAttrs + ' decoding="async" onerror="this.parentElement.innerHTML=\'<div class=\\\'flex items-center justify-center h-full text-red-400\\\'><svg class=\\\'w-12 h-12\\\' fill=\\\'currentColor\\\' viewBox=\\\'0 0 24 24\\\'><path d=\\\'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z\\\'/><path d=\\\'M14 2v6h6\\\'/></svg></div>\'">' +
-              '</div>'
-            : '<div class="thumbnail-shell bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden mb-3 flex items-center justify-center text-red-400">' +
-                '<svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6"/></svg>' +
-              '</div>';
-        
-        return '<div class="file-card cursor-pointer bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:border-primary-400 transition-all group active:scale-[0.98]" data-file=\'' + fileJson + '\'>' +
-            thumbnailHtml +
-            '<div class="px-1">' +
-                '<h4 class="font-bold dark:text-white truncate mb-1 text-sm sm:text-base leading-tight">' + escapedName + '</h4>' +
-                '<p class="text-xs text-slate-400 font-medium">' + escapedSize + '</p>' +
-            '</div>' +
-        '</div>';
-    }).join('');
-    
-    requestAnimationFrame(() => {
-        elements.filesGrid.removeEventListener('click', handleFileClick);
-        elements.filesGrid.innerHTML = html;
-        elements.filesGrid.addEventListener('click', handleFileClick, { passive: true });
-    });
+    const cards = new Array(files.length);
+    const currentToken = ++fileRenderToken;
+    let cursor = 0;
+
+    const processChunk = (deadline) => {
+        if (currentToken !== fileRenderToken) return;
+
+        let processed = 0;
+        while (cursor < files.length) {
+            if (deadline && typeof deadline.timeRemaining === 'function' && deadline.timeRemaining() <= 4 && processed > 0) {
+                break;
+            }
+            if (!deadline && processed >= 8) {
+                break;
+            }
+
+            cards[cursor] = buildFileCardHtml(files[cursor], cursor === lcpIndex);
+            cursor += 1;
+            processed += 1;
+        }
+
+        if (cursor < files.length) {
+            scheduleNonBlockingTask(processChunk);
+            return;
+        }
+
+        requestAnimationFrame(() => {
+            if (currentToken !== fileRenderToken) return;
+            elements.filesGrid.removeEventListener('click', handleFileClick);
+            elements.filesGrid.innerHTML = cards.join('');
+            elements.filesGrid.addEventListener('click', handleFileClick, { passive: true });
+        });
+    };
+
+    scheduleNonBlockingTask(processChunk);
+}
+
+function buildFileCardHtml(file, isLcpImage) {
+    const escapedName = escapeHtml(file.name.replace('.pdf', ''));
+    const escapedSize = escapeHtml(file.size);
+    const fileJson = JSON.stringify({ ...file, folderId: currentFolderId }).replace(/'/g, '&#39;');
+    const imageLoadingAttrs = isLcpImage ? 'fetchpriority="high"' : 'loading="lazy"';
+
+    const thumbnailHtml = file.thumbnailUrl
+        ? '<div class="thumbnail-shell bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden mb-3">' +
+            '<img src="' + escapeHtml(file.thumbnailUrl) + '" alt="' + escapedName + '" width="320" height="180" class="w-full h-full object-cover object-top" ' + imageLoadingAttrs + ' decoding="async" onerror="this.parentElement.innerHTML=\'<div class=\\\'flex items-center justify-center h-full text-red-400\\\'><svg class=\\\'w-12 h-12\\\' fill=\\\'currentColor\\\' viewBox=\\\'0 0 24 24\\\'><path d=\\\'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z\\\'/><path d=\\\'M14 2v6h6\\\'/></svg></div>\'">' +
+          '</div>'
+        : '<div class="thumbnail-shell bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden mb-3 flex items-center justify-center text-red-400">' +
+            '<svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6"/></svg>' +
+          '</div>';
+
+    return '<div class="file-card cursor-pointer bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:border-primary-400 transition-all group active:scale-[0.98]" data-file=\'' + fileJson + '\'>' +
+        thumbnailHtml +
+        '<div class="px-1">' +
+            '<h4 class="font-bold dark:text-white truncate mb-1 text-sm sm:text-base leading-tight">' + escapedName + '</h4>' +
+            '<p class="text-xs text-slate-400 font-medium">' + escapedSize + '</p>' +
+        '</div>' +
+    '</div>';
 }
 
 function handleFileClick(e) {
