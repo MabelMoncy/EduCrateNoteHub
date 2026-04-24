@@ -143,6 +143,38 @@ Git
 
 ### 🚢 Deployment
 
+This project supports deployment on both **Netlify** and **Vercel**.
+
+---
+
+#### Deploying to Netlify
+
+1. Push your forked repository to GitHub
+2. Go to [netlify.com](https://netlify.com) and click **"Add new site" → "Import an existing project"**
+3. Connect your GitHub account and select the repository
+4. Netlify will auto-detect the settings from `netlify.toml`:
+   - **Build command:** `npm install`
+   - **Publish directory:** `public`
+   - **Functions directory:** `netlify/functions`
+5. Add your environment variables under **Site settings → Environment variables**:
+6. Click **"Deploy site"**
+
+> API calls to `/api/*` are automatically redirected to Netlify Functions via the config.
+
+---
+
+#### Deploying to Vercel
+
+1. Push your forked repository to GitHub
+2. Go to [vercel.com](https://vercel.com) and click **"Add New Project"**
+3. Import your GitHub repository
+4. Vercel will auto-detect the settings from `vercel.json`
+5. Add your environment variables under **Project Settings → Environment Variables**:
+6. Click **"Deploy"**
+
+> API requests to `/api/*` are handled by `api/index.js` as a serverless function, with a max duration of 30 seconds.
+
+
 ## 🌐 Live Demo
 
 **🔗 [View Live Demo](https://educratenoteshub.vercel.app/)**
