@@ -39,6 +39,7 @@ function naturalSort(a, b) {
 
 const elements = {
     menuBtn: document.getElementById('menuBtn'),
+    sidebarCloseBtn: document.getElementById('sidebarCloseBtn'),
     sidebar: document.getElementById('sidebar'),
     sidebarOverlay: document.getElementById('sidebarOverlay'),
     foldersList: document.getElementById('foldersList'),
@@ -138,9 +139,12 @@ function setupEventListeners() {
         elements.sidebarOverlay.classList.remove('hidden');
     }, { passive: true });
 
+    if (elements.sidebarCloseBtn) {
+        elements.sidebarCloseBtn.addEventListener('click', closeSidebar, { passive: true });
+    }
+
     elements.sidebarOverlay.addEventListener('click', () => {
-        elements.sidebar.classList.add('-translate-x-full');
-        elements.sidebarOverlay.classList.add('hidden');
+        closeSidebar();
     }, { passive: true });
 
     // Mobile Search Logic
@@ -176,6 +180,7 @@ function setupEventListeners() {
     }, { passive: true });
     elements.searchInput.addEventListener('input', handleSearch, { passive: true });
     elements.searchInput.addEventListener('keydown', handleSearchKeydown);
+    elements.searchInput.addEventListener('focus', handleSearchFocus, { passive: true });
 
     if (elements.sortSelect) {
         elements.sortSelect.addEventListener('change', handleSortChange, { passive: true });
@@ -188,6 +193,22 @@ function setupEventListeners() {
     document.addEventListener('keydown', (e) => {
         if (!elements.pdfModal.classList.contains('hidden') && e.key === 'Escape') {
             closePdf();
+        }
+
+        if (
+            e.key === '/' &&
+            !e.metaKey &&
+            !e.ctrlKey &&
+            !e.altKey &&
+            !isEditableTarget(e.target) &&
+            elements.pdfModal.classList.contains('hidden')
+        ) {
+            e.preventDefault();
+            if (isMobile) {
+                toggleMobileSearch(true);
+            } else {
+                elements.searchInput.focus();
+            }
         }
     });
     
@@ -235,6 +256,7 @@ function setupEventListeners() {
             replaceUrlState(null, null);
             currentFolderId = null;
             currentFolderName = null;
+            updateActiveFolderButton();
             stopFilePolling();
             setSortVisibility(false);
             elements.contentHeader.classList.add('hidden');
@@ -261,6 +283,17 @@ function setupEventListeners() {
     });
 }
 
+function closeSidebar() {
+    elements.sidebar.classList.add('-translate-x-full');
+    elements.sidebarOverlay.classList.add('hidden');
+}
+
+function isEditableTarget(target) {
+    if (!target) return false;
+    const tagName = target.tagName;
+    return target.isContentEditable || tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT';
+}
+
 function toggleMobileSearch(isActive) {
     if (!isMobile) return; 
     requestAnimationFrame(() => {
@@ -280,6 +313,8 @@ function toggleMobileSearch(isActive) {
             elements.searchBarContainer.classList.remove('block');
             elements.closeSearchBtn.classList.add('hidden');
             elements.searchInput.value = '';
+            elements.searchInput.removeAttribute('aria-activedescendant');
+            elements.searchInput.setAttribute('aria-expanded', 'false');
             elements.searchResults.classList.add('hidden');
         }
     });
@@ -391,6 +426,7 @@ async function pollFolders() {
                 if (currentFolderId && !newFolders.find(f => f.id === currentFolderId)) {
                     currentFolderId = null;
                     currentFolderName = null;
+                    updateActiveFolderButton();
                     replaceUrlState(null, null);
                     stopFilePolling();
                     setSortVisibility(false);
@@ -476,17 +512,63 @@ function setSortVisibility(visible) {
 }
 
 function renderFolders(folders) {
-    const html = folders.map(f => 
-        '<button data-folder-id="' + escapeHtml(f.id) + '" data-folder-name="' + escapeHtml(f.name) + '" class="folder-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-slate-600 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 transition-all group active:scale-[0.98]">' +
-            '<svg class="w-5 h-5 opacity-50 group-hover:opacity-100 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>' +
-            '<span class="font-medium text-sm truncate">' + escapeHtml(f.name) + '</span>' +
+    const html = folders.map(f =>
+        '<button data-folder-id="' + escapeHtml(f.id) + '" data-folder-name="' + escapeHtml(f.name) + '" class="folder-btn active:scale-[0.98]">' +
+            '<span class="folder-icon" aria-hidden="true">' + getSubjectIconSvg(f.name) + '</span>' +
+            '<span class="folder-label">' + escapeHtml(f.name) + '</span>' +
+            '<span class="folder-meta-dot" aria-hidden="true"></span>' +
         '</button>'
     ).join('');
     
     requestAnimationFrame(() => {
         elements.foldersList.removeEventListener('click', handleFolderClick);
         elements.foldersList.innerHTML = html;
+        updateActiveFolderButton();
         elements.foldersList.addEventListener('click', handleFolderClick, { passive: true });
+    });
+}
+
+function getSubjectIconSvg(name = '') {
+    const normalizedName = name.toLowerCase();
+    const iconClass = 'w-5 h-5';
+
+    if (normalizedName.includes('dbms') || normalizedName.includes('database')) {
+        return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="7" ry="3" stroke-width="2"/><path d="M5 5v6c0 1.66 3.13 3 7 3s7-1.34 7-3V5" stroke-width="2" stroke-linecap="round"/><path d="M5 11v6c0 1.66 3.13 3 7 3s7-1.34 7-3v-6" stroke-width="2" stroke-linecap="round"/></svg>';
+    }
+
+    if (normalizedName.includes('operating') || normalizedName === 'os' || normalizedName.includes(' os')) {
+        return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2" stroke-width="2"/><path d="M8 20h8M12 16v4" stroke-width="2" stroke-linecap="round"/><path d="M8 8h.01M11 8h.01M14 8h.01" stroke-width="2" stroke-linecap="round"/></svg>';
+    }
+
+    if (normalizedName.includes('coa') || normalizedName.includes('architecture')) {
+        return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2" stroke-width="2"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 15h3M1 9h3M1 15h3" stroke-width="2" stroke-linecap="round"/><path d="M10 10h4v4h-4z" stroke-width="2"/></svg>';
+    }
+
+    if (normalizedName.includes('dsa') || normalizedName.includes('data structure') || normalizedName.includes('algorithm')) {
+        return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 8 4 12l4 4M16 8l4 4-4 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="m14 5-4 14" stroke-width="2" stroke-linecap="round"/></svg>';
+    }
+
+    if (normalizedName.includes('network')) {
+        return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0M8.5 16a6 6 0 0 1 7 0M12 20h.01" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 8.82a16 16 0 0 1 20 0" stroke-width="2" stroke-linecap="round"/></svg>';
+    }
+
+    if (normalizedName.includes('cyber') || normalizedName.includes('security')) {
+        return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 3 20 7v5c0 5-3.4 8-8 9-4.6-1-8-4-8-9V7l8-4Z" stroke-width="2" stroke-linejoin="round"/><path d="m9.5 12 1.7 1.7 3.8-4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+
+    if (normalizedName.includes('ai') || normalizedName.includes('ml') || normalizedName.includes('machine') || normalizedName.includes('artificial')) {
+        return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 3a3 3 0 0 0-3 3v1a3 3 0 0 0 0 6v1a3 3 0 0 0 4.5 2.6M15 3a3 3 0 0 1 3 3v1a3 3 0 0 1 0 6v1a3 3 0 0 1-4.5 2.6" stroke-width="2" stroke-linecap="round"/><path d="M12 5v14M8 9h2M14 9h2M8 15h2M14 15h2" stroke-width="2" stroke-linecap="round"/></svg>';
+    }
+
+    return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke-width="2" stroke-linecap="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" stroke-width="2" stroke-linejoin="round"/></svg>';
+}
+
+function updateActiveFolderButton() {
+    const buttons = elements.foldersList.querySelectorAll('.folder-btn');
+    buttons.forEach(btn => {
+        const isActive = btn.dataset.folderId === currentFolderId;
+        btn.classList.toggle('is-active', isActive);
+        btn.setAttribute('aria-current', isActive ? 'page' : 'false');
     });
 }
 
@@ -498,6 +580,7 @@ function handleFolderClick(e) {
 async function selectFolder(id, name, options = {}) {
     currentFolderId = id; // Track for refresh
     currentFolderName = name; // Track for refresh
+    updateActiveFolderButton();
     elements.welcomeState.classList.add('hidden');
     elements.contentHeader.classList.remove('hidden');
     setSortVisibility(true);
@@ -515,8 +598,7 @@ async function selectFolder(id, name, options = {}) {
     startFilePolling();
 
     if (isMobile) {
-        elements.sidebar.classList.add('-translate-x-full');
-        elements.sidebarOverlay.classList.add('hidden');
+        closeSidebar();
     }
 
     if (cachedFiles[id]) {
@@ -526,7 +608,7 @@ async function selectFolder(id, name, options = {}) {
 
     const skeletonCount = isMobile ? 2 : 3;
     elements.filesGrid.innerHTML = Array.from({ length: skeletonCount }, () =>
-        '<div class="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800">' +
+        '<div class="file-skeleton p-3 sm:p-4">' +
             '<div class="thumbnail-shell shimmer rounded-xl mb-3"></div>' +
             '<div class="h-4 shimmer rounded mb-2"></div>' +
             '<div class="h-3 w-20 shimmer rounded"></div>' +
@@ -703,18 +785,27 @@ function buildFileCardHtml(file, isLcpImage) {
     const imageLoadingAttrs = isLcpImage ? 'fetchpriority="high"' : 'loading="lazy"';
 
     const thumbnailHtml = file.thumbnailUrl
-        ? '<div class="thumbnail-shell bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden mb-3">' +
+        ? '<div class="note-thumb thumbnail-shell bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden mb-3">' +
             '<img src="' + escapeHtml(file.thumbnailUrl) + '" alt="' + escapedName + '" width="320" height="180" class="w-full h-full object-cover object-top" ' + imageLoadingAttrs + ' decoding="async" onerror="this.parentElement.innerHTML=\'<div class=\\\'flex items-center justify-center h-full text-red-400\\\'><svg class=\\\'w-12 h-12\\\' fill=\\\'currentColor\\\' viewBox=\\\'0 0 24 24\\\'><path d=\\\'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z\\\'/><path d=\\\'M14 2v6h6\\\'/></svg></div>\'">' +
           '</div>'
-        : '<div class="thumbnail-shell bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden mb-3 flex items-center justify-center text-red-400">' +
+        : '<div class="note-thumb note-fallback thumbnail-shell bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden mb-3 flex items-center justify-center text-red-400">' +
             '<svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6"/></svg>' +
           '</div>';
 
-    return '<div class="file-card cursor-pointer bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:border-primary-400 transition-all group active:scale-[0.98]" data-file=\'' + fileJson + '\'>' +
+    return '<div class="file-card note-card cursor-pointer bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:border-primary-400 transition-all group active:scale-[0.98]" data-file=\'' + fileJson + '\'>' +
         thumbnailHtml +
-        '<div class="px-1">' +
-            '<h4 class="font-bold dark:text-white truncate mb-1 text-sm sm:text-base leading-tight">' + escapedName + '</h4>' +
-            '<p class="text-xs text-slate-400 font-medium">' + escapedSize + '</p>' +
+        '<div class="note-body px-1">' +
+            '<h4 class="note-title font-bold dark:text-white text-sm sm:text-base leading-tight">' + escapedName + '</h4>' +
+            '<div class="note-meta">' +
+                '<span class="note-size">' +
+                    '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 2v6h6"/></svg>' +
+                    escapedSize +
+                '</span>' +
+                '<span class="note-open">' +
+                    'Open' +
+                    '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>' +
+                '</span>' +
+            '</div>' +
         '</div>' +
     '</div>';
 }
@@ -861,11 +952,20 @@ async function handleDownloadClick(e) {
 }
 
 // --- SEARCH ENGINE ---
+function handleSearchFocus() {
+    const q = elements.searchInput.value.trim();
+    if (q.length >= 2 && elements.searchResults.children.length > 0) {
+        elements.searchResults.classList.remove('hidden');
+        elements.searchInput.setAttribute('aria-expanded', 'true');
+    }
+}
+
 function handleSearch(e) {
     const q = e.target.value.trim();
     clearTimeout(searchTimeout);
     if(q.length < 2) { 
         activeSearchIndex = -1;
+        elements.searchInput.removeAttribute('aria-activedescendant');
         elements.searchInput.setAttribute('aria-expanded', 'false');
         elements.searchResults.classList.add('hidden'); 
         return; 
@@ -879,6 +979,7 @@ function handleSearch(e) {
                 renderSearchResults(data.data.sort(naturalSort));
             } else {
                 activeSearchIndex = -1;
+                elements.searchInput.removeAttribute('aria-activedescendant');
                 elements.searchInput.setAttribute('aria-expanded', 'false');
                 elements.searchResults.classList.add('hidden');
             }
@@ -889,15 +990,20 @@ function handleSearch(e) {
 function renderSearchResults(results) {
     const html = results.map((f, index) => {
         const escapedName = escapeHtml(f.name);
+        const displayName = escapedName.replace(/\.pdf$/i, '');
         const fileJson = JSON.stringify(f).replace(/'/g, '&#39;');
-        return '<div id="searchResult-' + index + '" role="option" aria-selected="false" tabindex="-1" class="search-result cursor-pointer p-3 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-3 border-b border-slate-100 dark:border-slate-700 last:border-0 transition-colors active:bg-slate-100 dark:active:bg-slate-600" data-file=\'' + fileJson + '\'>' +
-            '<svg class="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>' +
-            '<span class="text-xs font-medium dark:text-slate-200 truncate">' + escapedName + '</span>' +
+        return '<div id="searchResult-' + index + '" role="option" aria-selected="false" tabindex="-1" class="search-result cursor-pointer p-3 flex items-center gap-3 active:bg-slate-100 dark:active:bg-slate-600" data-file=\'' + fileJson + '\'>' +
+            '<span class="search-result-icon" aria-hidden="true"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg></span>' +
+            '<span class="search-result-text">' +
+                '<span class="search-result-name">' + displayName + '</span>' +
+                '<span class="search-result-label">PDF note</span>' +
+            '</span>' +
         '</div>';
     }).join('');
     
     requestAnimationFrame(() => {
         activeSearchIndex = -1;
+        elements.searchInput.removeAttribute('aria-activedescendant');
         elements.searchResults.removeEventListener('click', handleSearchResultClick);
         elements.searchResults.innerHTML = html;
         elements.searchResults.classList.remove('hidden');
@@ -923,6 +1029,7 @@ function handleSearchKeydown(e) {
         if (target) openPdf(JSON.parse(target.dataset.file));
     } else if (e.key === 'Escape') {
         activeSearchIndex = -1;
+        elements.searchInput.removeAttribute('aria-activedescendant');
         elements.searchInput.setAttribute('aria-expanded', 'false');
         elements.searchResults.classList.add('hidden');
     }
@@ -935,8 +1042,6 @@ function setActiveSearchResult(index) {
     results.forEach((item, itemIndex) => {
         const isActive = itemIndex === index;
         item.setAttribute('aria-selected', isActive ? 'true' : 'false');
-        item.classList.toggle('bg-slate-100', isActive);
-        item.classList.toggle('dark:bg-slate-600', isActive);
     });
 
     activeSearchIndex = index;
