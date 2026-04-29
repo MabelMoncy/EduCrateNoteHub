@@ -51,6 +51,7 @@
             --acc-1: #7b5cff;
             --acc-2: #4fd1ff;
             --acc-3: #ff5da2;
+            --acc-4: #31d0aa;
             --panel: rgba(255, 255, 255, 0.72);
             --panel-border: rgba(99, 102, 241, 0.18);
             --text-main: #000000;
@@ -78,11 +79,14 @@
         body {
             color: var(--text-main);
             background:
-                radial-gradient(1100px 640px at 15% 0%, rgba(123, 92, 255, 0.26), transparent 60%),
-                radial-gradient(900px 560px at 85% 20%, rgba(79, 209, 255, 0.18), transparent 60%),
+                radial-gradient(900px 560px at 12% -8%, rgba(49, 208, 170, 0.16), transparent 62%),
+                radial-gradient(1100px 640px at 18% 0%, rgba(123, 92, 255, 0.2), transparent 60%),
+                radial-gradient(900px 560px at 88% 18%, rgba(79, 209, 255, 0.15), transparent 62%),
+                radial-gradient(780px 520px at 72% 88%, rgba(255, 93, 162, 0.08), transparent 68%),
                 linear-gradient(145deg, var(--bg-0), var(--bg-1) 45%, var(--bg-2));
             position: relative;
             overflow-x: hidden;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
 
         body::before {
@@ -91,10 +95,10 @@
             inset: -20%;
             z-index: -2;
             background:
-                radial-gradient(circle at 30% 30%, rgba(123, 92, 255, 0.22), transparent 35%),
-                radial-gradient(circle at 70% 60%, rgba(79, 209, 255, 0.18), transparent 35%),
-                radial-gradient(circle at 50% 80%, rgba(255, 93, 162, 0.1), transparent 30%);
-            filter: blur(30px);
+                radial-gradient(circle at 30% 30%, rgba(123, 92, 255, 0.16), transparent 38%),
+                radial-gradient(circle at 72% 56%, rgba(49, 208, 170, 0.13), transparent 36%),
+                radial-gradient(circle at 52% 82%, rgba(255, 93, 162, 0.08), transparent 34%);
+            filter: blur(34px);
             animation: bgDrift 16s ease-in-out infinite alternate;
             pointer-events: none;
         }
@@ -166,15 +170,41 @@
             border-color: var(--panel-border) !important;
         }
 
+        nav {
+            background: rgba(255, 255, 255, 0.72) !important;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.14) !important;
+            box-shadow: 0 16px 40px rgba(31, 41, 55, 0.08);
+        }
+
+        .dark nav {
+            background: rgba(7, 10, 32, 0.74) !important;
+            border-bottom-color: rgba(143, 162, 255, 0.14) !important;
+            box-shadow: 0 18px 44px rgba(0, 0, 0, 0.3);
+        }
+
         #sidebarOverlay,
         #modalBackdrop {
             background-color: var(--overlay) !important;
         }
 
         #sidebar {
-            background: transparent !important;
+            background:
+                linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.54)) !important;
+            border: 1px solid rgba(99, 102, 241, 0.16) !important;
+            border-left: 0 !important;
+            border-radius: 0 1.5rem 1.5rem 0;
+            box-shadow: 18px 24px 70px rgba(31, 41, 55, 0.14);
             overflow: hidden;
             isolation: isolate;
+            transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease;
+            will-change: transform;
+        }
+
+        .dark #sidebar {
+            background:
+                linear-gradient(145deg, rgba(8, 13, 42, 0.9), rgba(10, 16, 48, 0.66)) !important;
+            border-color: rgba(143, 162, 255, 0.18) !important;
+            box-shadow: 18px 24px 80px rgba(0, 0, 0, 0.34);
         }
 
         #sidebar::before {
@@ -183,12 +213,12 @@
             inset: 0;
             pointer-events: none;
             z-index: 0;
-            opacity: 0.42;
+            opacity: 0.34;
             background:
-                radial-gradient(circle at 25% 22%, rgba(123, 92, 255, 0.3), transparent 48%),
-                radial-gradient(circle at 78% 72%, rgba(79, 209, 255, 0.24), transparent 46%),
-                radial-gradient(circle at 52% 86%, rgba(255, 93, 162, 0.13), transparent 36%);
-            filter: blur(14px);
+                radial-gradient(circle at 20% 18%, rgba(123, 92, 255, 0.28), transparent 50%),
+                radial-gradient(circle at 78% 70%, rgba(49, 208, 170, 0.2), transparent 48%),
+                radial-gradient(circle at 58% 88%, rgba(255, 93, 162, 0.1), transparent 38%);
+            filter: blur(18px);
             animation: sidebarColorFloat 12s ease-in-out infinite alternate;
         }
 
@@ -209,6 +239,531 @@
         #sidebar > * {
             position: relative;
             z-index: 1;
+        }
+
+        .sidebar-shell {
+            padding: 1rem;
+        }
+
+        .sidebar-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding: 0.25rem 0.25rem 0.25rem 0.5rem;
+        }
+
+        .sidebar-kicker {
+            color: var(--text-muted);
+            display: block;
+            font-size: 0.63rem;
+            font-weight: 800;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+        }
+
+        .sidebar-title {
+            color: var(--text-main);
+            display: block;
+            font-size: 1rem;
+            font-weight: 850;
+            letter-spacing: 0;
+            line-height: 1.25rem;
+            margin-top: 0.15rem;
+        }
+
+        .icon-btn {
+            align-items: center;
+            border: 1px solid var(--control-border) !important;
+            border-radius: 0.9rem;
+            display: inline-flex;
+            height: 2.5rem;
+            justify-content: center;
+            transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
+            width: 2.5rem;
+        }
+
+        .hidden.icon-btn {
+            display: none !important;
+        }
+
+        @media (min-width: 768px) {
+            .md\:hidden.icon-btn {
+                display: none !important;
+            }
+        }
+
+        .icon-btn:hover,
+        #themeToggle:hover,
+        #mobileSearchTrigger:hover,
+        #menuBtn:hover,
+        #closeSearchBtn:hover {
+            border-color: rgba(99, 102, 241, 0.42) !important;
+            box-shadow: 0 10px 28px rgba(79, 70, 229, 0.14);
+            transform: translateY(-1px);
+        }
+
+        #foldersList {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            padding: 0.2rem 0.25rem 0.8rem;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(123, 92, 255, 0.35) transparent;
+        }
+
+        #foldersList > * + * {
+            margin-top: 0 !important;
+        }
+
+        #foldersList::-webkit-scrollbar,
+        #searchResults::-webkit-scrollbar {
+            width: 0.45rem;
+        }
+
+        #foldersList::-webkit-scrollbar-thumb,
+        #searchResults::-webkit-scrollbar-thumb {
+            background: rgba(123, 92, 255, 0.32);
+            border-radius: 999px;
+        }
+
+        .folder-btn {
+            align-items: center;
+            background: rgba(255, 255, 255, 0.4) !important;
+            border: 1px solid rgba(99, 102, 241, 0.08);
+            border-radius: 1rem;
+            color: var(--text-main) !important;
+            display: flex;
+            gap: 0.75rem;
+            min-height: 3.2rem;
+            overflow: hidden;
+            padding: 0.72rem 0.78rem;
+            position: relative;
+            text-align: left;
+            transform: translateZ(0);
+            transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+            width: 100%;
+        }
+
+        .dark .folder-btn {
+            background: rgba(15, 23, 62, 0.34) !important;
+            border-color: rgba(143, 162, 255, 0.08);
+        }
+
+        .folder-btn::before {
+            background: linear-gradient(90deg, rgba(123, 92, 255, 0.24), rgba(49, 208, 170, 0.18));
+            content: "";
+            inset: 0;
+            opacity: 0;
+            position: absolute;
+            transition: opacity 180ms ease;
+        }
+
+        .folder-btn:hover {
+            border-color: rgba(123, 92, 255, 0.28);
+            box-shadow: 0 14px 32px rgba(79, 70, 229, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+            transform: translateX(4px) scale(1.01);
+        }
+
+        .folder-btn:hover::before,
+        .folder-btn.is-active::before {
+            opacity: 1;
+        }
+
+        .folder-btn.is-active {
+            background: rgba(255, 255, 255, 0.64) !important;
+            border-color: rgba(123, 92, 255, 0.46);
+            box-shadow: 0 16px 34px rgba(79, 70, 229, 0.16), 0 0 0 1px rgba(79, 209, 255, 0.1);
+            transform: translateX(3px);
+        }
+
+        .dark .folder-btn.is-active {
+            background: rgba(25, 34, 88, 0.58) !important;
+            box-shadow: 0 18px 38px rgba(49, 208, 170, 0.08), 0 0 0 1px rgba(123, 92, 255, 0.22);
+        }
+
+        .folder-icon {
+            align-items: center;
+            background: rgba(255, 255, 255, 0.66);
+            border: 1px solid rgba(99, 102, 241, 0.12);
+            border-radius: 0.85rem;
+            color: #5b5df0;
+            display: inline-flex;
+            flex: 0 0 auto;
+            height: 2rem;
+            justify-content: center;
+            position: relative;
+            transition: transform 180ms ease, color 180ms ease, box-shadow 180ms ease;
+            width: 2rem;
+            z-index: 1;
+        }
+
+        .dark .folder-icon {
+            background: rgba(8, 13, 42, 0.72);
+            border-color: rgba(143, 162, 255, 0.16);
+            color: #93c5fd;
+        }
+
+        .folder-btn:hover .folder-icon,
+        .folder-btn.is-active .folder-icon {
+            box-shadow: 0 10px 24px rgba(79, 70, 229, 0.18);
+            color: #21a98e;
+            transform: scale(1.06);
+        }
+
+        .folder-label {
+            font-size: 0.9rem;
+            font-weight: 750;
+            letter-spacing: 0;
+            line-height: 1.2rem;
+            min-width: 0;
+            overflow: hidden;
+            position: relative;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            z-index: 1;
+        }
+
+        .folder-meta-dot {
+            background: rgba(49, 208, 170, 0.72);
+            border-radius: 999px;
+            box-shadow: 0 0 18px rgba(49, 208, 170, 0.36);
+            flex: 0 0 auto;
+            height: 0.42rem;
+            margin-left: auto;
+            opacity: 0;
+            position: relative;
+            transition: opacity 180ms ease, transform 180ms ease;
+            width: 0.42rem;
+            z-index: 1;
+        }
+
+        .folder-btn.is-active .folder-meta-dot,
+        .folder-btn:hover .folder-meta-dot {
+            opacity: 1;
+            transform: scale(1.15);
+        }
+
+        .sidebar-cta {
+            background-image: linear-gradient(135deg, #ef4444, #f43f5e 48%, #7b5cff) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            box-shadow: 0 16px 34px rgba(239, 68, 68, 0.22);
+        }
+
+        .sidebar-credit {
+            border-top: 1px solid var(--panel-border) !important;
+            margin-top: 1rem;
+            padding-top: 1rem;
+        }
+
+        .notes-grid {
+            align-items: stretch;
+        }
+
+        .note-card {
+            background:
+                linear-gradient(145deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.58)) !important;
+            border: 1px solid rgba(99, 102, 241, 0.16) !important;
+            border-radius: 1.35rem !important;
+            box-shadow: 0 16px 40px rgba(31, 41, 55, 0.1);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+            padding: 0.75rem !important;
+            position: relative;
+            transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+        }
+
+        .dark .note-card {
+            background:
+                linear-gradient(145deg, rgba(13, 20, 54, 0.84), rgba(11, 17, 48, 0.62)) !important;
+            border-color: rgba(143, 162, 255, 0.14) !important;
+            box-shadow: 0 18px 46px rgba(0, 0, 0, 0.26);
+        }
+
+        .note-card::before {
+            background: linear-gradient(135deg, rgba(123, 92, 255, 0.18), rgba(49, 208, 170, 0.13));
+            content: "";
+            inset: 0;
+            opacity: 0;
+            pointer-events: none;
+            position: absolute;
+            transition: opacity 180ms ease;
+        }
+
+        .note-card:hover {
+            border-color: rgba(123, 92, 255, 0.36) !important;
+            box-shadow: 0 22px 56px rgba(79, 70, 229, 0.16);
+            transform: translateY(-4px);
+        }
+
+        .note-card:hover::before {
+            opacity: 1;
+        }
+
+        .note-thumb {
+            background: rgba(241, 245, 249, 0.72) !important;
+            border: 1px solid rgba(99, 102, 241, 0.12);
+            border-radius: 1rem !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        .dark .note-thumb {
+            background: rgba(15, 23, 62, 0.76) !important;
+            border-color: rgba(143, 162, 255, 0.12);
+        }
+
+        .note-thumb img {
+            transition: transform 220ms ease, filter 220ms ease;
+        }
+
+        .note-card:hover .note-thumb img {
+            filter: saturate(1.05) contrast(1.03);
+            transform: scale(1.035);
+        }
+
+        .note-fallback {
+            background:
+                radial-gradient(circle at 30% 20%, rgba(239, 68, 68, 0.16), transparent 42%),
+                radial-gradient(circle at 72% 78%, rgba(123, 92, 255, 0.18), transparent 44%),
+                rgba(248, 250, 252, 0.78) !important;
+        }
+
+        .dark .note-fallback {
+            background:
+                radial-gradient(circle at 30% 20%, rgba(239, 68, 68, 0.14), transparent 42%),
+                radial-gradient(circle at 72% 78%, rgba(123, 92, 255, 0.18), transparent 44%),
+                rgba(15, 23, 62, 0.78) !important;
+        }
+
+        .note-body {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            gap: 0.65rem;
+            min-width: 0;
+            padding: 0.15rem 0.1rem 0.05rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .note-title {
+            color: var(--text-main);
+            display: -webkit-box;
+            font-size: 0.96rem;
+            font-weight: 820;
+            line-height: 1.28rem;
+            margin: 0;
+            overflow: hidden;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+
+        .note-meta {
+            align-items: center;
+            color: var(--text-muted);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: space-between;
+            margin-top: auto;
+        }
+
+        .note-size,
+        .note-open {
+            align-items: center;
+            border-radius: 999px;
+            display: inline-flex;
+            font-size: 0.72rem;
+            font-weight: 800;
+            gap: 0.35rem;
+            line-height: 1rem;
+            white-space: nowrap;
+        }
+
+        .note-size {
+            background: rgba(100, 116, 139, 0.1);
+            color: var(--text-muted);
+            padding: 0.35rem 0.55rem;
+        }
+
+        .note-open {
+            background: rgba(123, 92, 255, 0.12);
+            color: #5b5df0;
+            padding: 0.35rem 0.6rem;
+            transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+        }
+
+        .dark .note-open {
+            color: #a5b4fc;
+        }
+
+        .note-card:hover .note-open {
+            background: rgba(49, 208, 170, 0.14);
+            color: #15967f;
+            transform: translateX(2px);
+        }
+
+        .file-skeleton {
+            background: rgba(255, 255, 255, 0.62) !important;
+            border: 1px solid rgba(99, 102, 241, 0.14) !important;
+            border-radius: 1.35rem;
+            box-shadow: 0 16px 40px rgba(31, 41, 55, 0.08);
+        }
+
+        .dark .file-skeleton {
+            background: rgba(11, 17, 48, 0.62) !important;
+        }
+
+        .search-shell {
+            position: relative;
+        }
+
+        .search-shell::before {
+            background: linear-gradient(135deg, rgba(123, 92, 255, 0.34), rgba(49, 208, 170, 0.24), rgba(255, 93, 162, 0.2));
+            border-radius: 999px;
+            content: "";
+            inset: -1px;
+            opacity: 0;
+            position: absolute;
+            transition: opacity 180ms ease;
+            z-index: -1;
+        }
+
+        .search-shell:focus-within::before {
+            opacity: 1;
+        }
+
+        .search-leading-icon,
+        .search-shortcut {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 2;
+        }
+
+        .search-leading-icon {
+            color: var(--text-muted);
+            left: 0.9rem;
+        }
+
+        .search-shortcut {
+            align-items: center;
+            background: rgba(255, 255, 255, 0.65);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            border-radius: 0.65rem;
+            color: var(--text-muted);
+            display: none;
+            font-size: 0.7rem;
+            font-weight: 800;
+            height: 1.55rem;
+            justify-content: center;
+            right: 0.75rem;
+            width: 1.55rem;
+        }
+
+        .dark .search-shortcut {
+            background: rgba(8, 13, 42, 0.72);
+            border-color: rgba(143, 162, 255, 0.16);
+        }
+
+        @media (min-width: 768px) {
+            .search-shortcut {
+                display: inline-flex;
+            }
+        }
+
+        #searchInput {
+            background: rgba(255, 255, 255, 0.68) !important;
+            border-color: rgba(99, 102, 241, 0.16) !important;
+            border-radius: 999px !important;
+            box-shadow: 0 14px 34px rgba(31, 41, 55, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.48);
+            font-weight: 650;
+            height: 2.85rem;
+            padding-left: 2.75rem !important;
+            padding-right: 3.1rem !important;
+            transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease, background-color 180ms ease;
+        }
+
+        .dark #searchInput {
+            background: rgba(11, 17, 48, 0.68) !important;
+            box-shadow: 0 16px 38px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+
+        #searchInput:focus {
+            border-color: rgba(123, 92, 255, 0.55) !important;
+            box-shadow: 0 18px 42px rgba(79, 70, 229, 0.16), 0 0 0 4px rgba(123, 92, 255, 0.14);
+            transform: translateY(-1px);
+        }
+
+        #searchResults {
+            background: rgba(255, 255, 255, 0.86) !important;
+            border: 1px solid rgba(99, 102, 241, 0.18) !important;
+            border-radius: 1.2rem !important;
+            box-shadow: 0 24px 70px rgba(31, 41, 55, 0.18);
+            overflow: hidden auto;
+            padding: 0.35rem;
+        }
+
+        .dark #searchResults {
+            background: rgba(8, 13, 42, 0.9) !important;
+            box-shadow: 0 26px 80px rgba(0, 0, 0, 0.36);
+        }
+
+        .search-result {
+            border: 1px solid transparent !important;
+            border-radius: 0.9rem;
+            color: var(--text-main);
+            min-height: 3rem;
+            transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+        }
+
+        .search-result:hover,
+        .search-result[aria-selected="true"] {
+            background: rgba(123, 92, 255, 0.1) !important;
+            border-color: rgba(123, 92, 255, 0.18) !important;
+            box-shadow: 0 10px 22px rgba(79, 70, 229, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .search-result-icon {
+            align-items: center;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 0.75rem;
+            color: #ef4444;
+            display: inline-flex;
+            flex: 0 0 auto;
+            height: 2rem;
+            justify-content: center;
+            width: 2rem;
+        }
+
+        .search-result-text {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .search-result-name {
+            color: var(--text-main);
+            font-size: 0.82rem;
+            font-weight: 750;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .search-result-label {
+            color: var(--text-muted);
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
         }
 
         #welcomeState p,
@@ -304,6 +859,203 @@
             color: rgba(0, 0, 0, 0.65);
         }
 
+        #contentHeader {
+            background: transparent !important;
+            border-bottom-color: transparent !important;
+            box-shadow: none;
+        }
+
+        #pdfModal .relative.flex.flex-col.h-full.w-full.overflow-hidden {
+            background:
+                radial-gradient(900px 560px at 20% 0%, rgba(123, 92, 255, 0.16), transparent 62%),
+                radial-gradient(800px 520px at 90% 70%, rgba(49, 208, 170, 0.12), transparent 58%),
+                rgba(2, 6, 23, 0.92) !important;
+        }
+
+        #pdfModal .flex.items-center.justify-between {
+            border-color: rgba(143, 162, 255, 0.18) !important;
+            box-shadow: 0 16px 44px rgba(0, 0, 0, 0.28);
+        }
+
+        #pdfContainer {
+            background: rgba(2, 6, 23, 0.72) !important;
+            border: 1px solid rgba(143, 162, 255, 0.12);
+            border-radius: 1.2rem;
+            margin: 0.75rem;
+            overflow: hidden;
+        }
+
+        #pdfLoading {
+            color: var(--text-main);
+            min-height: 100%;
+        }
+
+        @media (min-width: 768px) {
+            main {
+                margin-left: 18rem !important;
+            }
+
+            #sidebar {
+                bottom: 1rem;
+                left: 1rem;
+                top: 5rem;
+                border-left: 1px solid rgba(99, 102, 241, 0.16) !important;
+                border-radius: 1.5rem;
+            }
+        }
+
+        @media (max-width: 767px) {
+            nav > div {
+                height: 4rem;
+                padding-left: 0.8rem;
+                padding-right: 0.8rem;
+            }
+
+            #sidebar {
+                bottom: 0.6rem;
+                left: 0.6rem;
+                max-width: calc(100vw - 1.2rem);
+                top: 4.6rem;
+                width: min(20rem, calc(100vw - 1.2rem));
+                border-left: 1px solid rgba(99, 102, 241, 0.16) !important;
+                border-radius: 1.35rem;
+            }
+
+            #sidebar.-translate-x-full {
+                transform: translateX(calc(-100% - 1.25rem)) !important;
+            }
+
+            .sidebar-shell {
+                padding: 0.85rem;
+            }
+
+            .sidebar-heading {
+                margin-bottom: 0.75rem;
+                padding-left: 0.25rem;
+            }
+
+            #foldersList {
+                gap: 0.72rem;
+                padding-bottom: 1rem;
+            }
+
+            .folder-btn {
+                border-radius: 1.05rem;
+                min-height: 3.45rem;
+                padding: 0.78rem;
+            }
+
+            .folder-btn:hover,
+            .folder-btn.is-active {
+                transform: translateX(0) scale(1);
+            }
+
+            #searchWrapper {
+                padding-left: 0.15rem;
+                padding-right: 0.15rem;
+            }
+
+            #searchInput {
+                height: 2.75rem;
+                padding-right: 1rem !important;
+            }
+
+            main {
+                padding-top: 4rem !important;
+            }
+
+            #contentHeader {
+                padding: 0.85rem 0.9rem !important;
+            }
+
+            #contentTitle {
+                font-size: 1.2rem;
+                line-height: 1.5rem;
+                white-space: normal;
+            }
+
+            .main-content-shell {
+                padding: 0.75rem !important;
+            }
+
+            #filesGrid {
+                gap: 0.75rem;
+            }
+
+            .note-card {
+                border-radius: 1rem !important;
+                padding: 0.55rem !important;
+                box-shadow: 0 12px 30px rgba(31, 41, 55, 0.1);
+            }
+
+            .note-card:hover {
+                transform: none;
+            }
+
+            .note-thumb {
+                border-radius: 0.85rem !important;
+                margin-bottom: 0.6rem !important;
+            }
+
+            .note-body {
+                gap: 0.5rem;
+                padding-left: 0.05rem;
+                padding-right: 0.05rem;
+            }
+
+            .note-title {
+                font-size: 0.88rem;
+                line-height: 1.18rem;
+            }
+
+            .note-meta {
+                align-items: center;
+                flex-direction: row;
+                gap: 0.45rem;
+            }
+
+            .note-size,
+            .note-open {
+                flex: 1 1 0;
+                justify-content: center;
+                min-width: 0;
+                padding: 0.4rem 0.45rem;
+                width: auto;
+            }
+
+            .note-size {
+                flex: 0 1 46%;
+            }
+
+            .note-open {
+                flex: 1 1 54%;
+            }
+
+            #pdfModal .flex.items-center.justify-between {
+                padding: 0.75rem !important;
+            }
+
+            #pdfTitle {
+                font-size: 0.78rem;
+                line-height: 1rem;
+            }
+
+            #pdfDownload {
+                min-width: 2.45rem;
+                padding-left: 0.7rem !important;
+                padding-right: 0.7rem !important;
+            }
+
+            #pdfDownload span {
+                display: none;
+            }
+
+            #pdfContainer {
+                border-radius: 1rem;
+                margin: 0.55rem;
+            }
+        }
+
         @media (prefers-reduced-motion: reduce) {
             html { scroll-behavior: auto !important; }
             .shimmer,
@@ -311,8 +1063,17 @@
             body::before,
             body::after,
             #sidebar::before,
-            #sidebar::after {
+            #sidebar::after,
+            .neon-cta {
                 animation: none !important;
+            }
+
+            #sidebar,
+            .folder-btn,
+            #searchInput,
+            .search-result,
+            .icon-btn {
+                transition: none !important;
             }
         }
     </style>
@@ -325,7 +1086,7 @@
         
         <!-- Left Section: Menu & Logo -->
         <div id="logoContainer" class="flex items-center gap-3 transition-[transform,opacity] duration-300">
-            <button id="menuBtn" aria-label="Open sidebar" class="md:hidden p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">
+            <button id="menuBtn" aria-label="Open sidebar" class="icon-btn md:hidden p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
             <a href="/" class="flex items-center">
@@ -336,14 +1097,16 @@
         <!-- Center Section: Search Bar -->
         <div id="searchWrapper" class="flex-1 flex justify-end md:justify-center items-center px-2 transition-[transform,opacity] duration-300">
             <!-- Mobile Back Button (Hidden by default) -->
-            <button id="closeSearchBtn" aria-label="Close search" class="hidden p-2 text-slate-500 mr-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors duration-300">
+            <button id="closeSearchBtn" aria-label="Close search" class="icon-btn hidden p-2 text-slate-500 mr-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors duration-300">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             </button>
 
             <div class="relative w-full max-w-md">
                 <!-- Actual Search Input -->
-                <div id="searchBarContainer" class="hidden md:block relative w-full">
+                <div id="searchBarContainer" class="hidden md:block relative w-full search-shell">
+                    <svg class="search-leading-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m1.35-5.65a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     <input type="text" id="searchInput" aria-label="Search notes" aria-autocomplete="list" aria-expanded="false" aria-controls="searchResults" placeholder="Search notes..." class="w-full pl-4 pr-10 py-2 bg-slate-100 dark:bg-slate-800 border-transparent rounded-xl text-sm focus:ring-2 focus:ring-primary-500 dark:text-white outline-none transition-all">
+                    <kbd class="search-shortcut" aria-hidden="true">/</kbd>
                     <div id="searchResults" role="listbox" aria-label="Search results" class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl hidden z-[100] border border-slate-200 dark:border-slate-700 max-h-[70vh] overflow-y-auto"></div>
                 </div>
             </div>
@@ -352,10 +1115,10 @@
         <!-- Right Section: Theme Toggle -->
         <div id="rightNav" class="flex items-center gap-1 transition-[transform,opacity] duration-300">
             <!-- Mobile Search Trigger Icon -->
-            <button id="mobileSearchTrigger" aria-label="Open search" class="md:hidden p-2.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors duration-300">
+            <button id="mobileSearchTrigger" aria-label="Open search" class="icon-btn md:hidden p-2.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors duration-300">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             </button>
-            <button id="themeToggle" aria-label="Toggle theme" class="p-2.5 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors duration-300">
+            <button id="themeToggle" aria-label="Toggle theme" class="icon-btn p-2.5 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors duration-300">
                 <svg id="sunIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                 <svg id="moonIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
             </button>
@@ -366,15 +1129,23 @@
     <!-- Sidebar -->
     <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-30 hidden"></div>
     <aside id="sidebar" class="fixed left-0 top-16 bottom-0 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-30 -translate-x-full md:translate-x-0 transition-transform duration-300">
-        <div class="p-4 flex flex-col h-full">
-            <h2 class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 px-2">Subjects</h2>
+        <div class="sidebar-shell flex flex-col h-full">
+            <div class="sidebar-heading">
+                <h2>
+                    <span class="sidebar-kicker">Library</span>
+                    <span class="sidebar-title">Subjects</span>
+                </h2>
+                <button id="sidebarCloseBtn" aria-label="Close sidebar" class="icon-btn md:hidden text-slate-600 dark:text-slate-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
             <div id="foldersList" class="space-y-1 flex-1 overflow-y-auto">
                 <div class="p-2 space-y-3"><div class="h-9 shimmer rounded-lg"></div><div class="h-9 shimmer rounded-lg"></div></div>
             </div>
-            <a href="https://model.ktunotes.live/s4/cs" target="_blank" rel="noopener noreferrer" class="neon-cta mt-2 inline-flex w-full items-center justify-center gap-2 px-3 py-3 bg-red-600 text-white rounded-xl text-sm font-bold whitespace-nowrap hover:bg-red-700 hover:scale-105 transition-all shadow-lg shadow-red-500/30 active:scale-95">
+            <a href="https://model.ktunotes.live/s4/cs" target="_blank" rel="noopener noreferrer" class="sidebar-cta neon-cta mt-2 inline-flex w-full items-center justify-center gap-2 px-3 py-3 bg-red-600 text-white rounded-xl text-sm font-bold whitespace-nowrap hover:bg-red-700 hover:scale-105 transition-all shadow-lg shadow-red-500/30 active:scale-95">
                 Get Model Question Papers
             </a>
-            <div class="pt-4 border-t border-slate-100 dark:border-slate-800">
+            <div class="sidebar-credit pt-4 border-t border-slate-100 dark:border-slate-800">
                 <p class="text-[10px] text-slate-400 text-center mb-1">CRAFTED FOR S4 CS2</p>
                 <a href="https://github.com/MabelMoncy" target="_blank" rel="noopener noreferrer" class="block text-xs font-bold text-primary-600 dark:text-primary-400 text-center hover:underline cursor-pointer">
                     Mabel Anto Moncy
@@ -416,7 +1187,7 @@
                 </div>
             </div>
             
-            <div id="filesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+            <div id="filesGrid" class="notes-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
             <div id="emptyState" class="hidden text-center py-20 text-slate-400 font-medium">No notes uploaded to this section yet.</div>
         </div>
     </main>
