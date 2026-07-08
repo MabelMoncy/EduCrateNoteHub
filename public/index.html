@@ -455,6 +455,90 @@
             transform: scale(1.15);
         }
 
+        /* Tree Styles */
+        .tree-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .tree-item {
+            margin-bottom: 0.15rem;
+        }
+
+        .tree-toggle {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 0.5rem;
+            border-radius: 0.75rem;
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+            background: transparent;
+            text-align: left;
+        }
+
+        .tree-toggle:hover {
+            background: rgba(255, 255, 255, 0.4) !important;
+        }
+
+        .dark .tree-toggle:hover {
+            background: rgba(25, 34, 88, 0.3) !important;
+        }
+
+        .tree-toggle.is-active {
+            background: rgba(255, 255, 255, 0.64) !important;
+            border-color: rgba(123, 92, 255, 0.46);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08);
+        }
+
+        .dark .tree-toggle.is-active {
+            background: rgba(25, 34, 88, 0.58) !important;
+            border-color: rgba(123, 92, 255, 0.22);
+            box-shadow: 0 4px 12px rgba(49, 208, 170, 0.04);
+        }
+
+        .tree-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            width: 1.5rem;
+            height: 1.5rem;
+            color: #5b5df0;
+        }
+
+        .dark .tree-icon {
+            color: #93c5fd;
+        }
+
+        .tree-toggle.is-active .tree-icon {
+            color: #21a98e;
+        }
+
+        .tree-chevron {
+            font-size: 0.6rem;
+            transition: transform 0.2s;
+            color: #94a3b8;
+            width: 1rem;
+            text-align: center;
+        }
+
+        .tree-item.is-expanded > .tree-toggle .tree-chevron {
+            transform: rotate(90deg);
+        }
+
+        .tree-label {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         .sidebar-cta {
             background-image: linear-gradient(135deg, #ef4444, #f43f5e 48%, #7b5cff) !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
@@ -628,6 +712,98 @@
 
         .dark .file-skeleton {
             background: rgba(11, 17, 48, 0.62) !important;
+        }
+
+        /* Folder Card and Breadcrumbs */
+        .breadcrumb-trail { margin-bottom: 0.75rem; }
+        .breadcrumb-item { cursor: pointer; transition: color 150ms ease; }
+        .breadcrumb-item:hover { color: var(--acc-1); }
+        .breadcrumb-separator { margin: 0 0.25rem; opacity: 0.5; }
+        
+        .folder-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
+            border-radius: 1rem;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            transition: all 180ms ease;
+            cursor: pointer;
+        }
+        .dark .folder-card {
+            background: linear-gradient(145deg, rgba(13, 20, 54, 0.9), rgba(11, 17, 48, 0.7));
+            border-color: rgba(143, 162, 255, 0.15);
+        }
+        .folder-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(123, 92, 255, 0.4);
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.12);
+        }
+        .folder-card-icon {
+            color: #5b5df0;
+            background: rgba(123, 92, 255, 0.1);
+            padding: 0.6rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .dark .folder-card-icon {
+            color: #93c5fd;
+            background: rgba(143, 162, 255, 0.1);
+        }
+        .folder-card-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* Sidebar Tree */
+        .tree-list { list-style: none; padding: 0; margin: 0; }
+        .tree-children { padding-left: 0.75rem; border-left: 1px solid rgba(99, 102, 241, 0.1); margin-left: 0.75rem; }
+        .dark .tree-children { border-left-color: rgba(143, 162, 255, 0.1); }
+        .tree-toggle {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 0.4rem 0.5rem;
+            border-radius: 0.5rem;
+            color: var(--text-main);
+            transition: all 150ms ease;
+            text-align: left;
+            margin-bottom: 2px;
+            cursor: pointer;
+        }
+        .tree-toggle:hover { background: rgba(123, 92, 255, 0.1); }
+        .tree-toggle.is-active { background: rgba(123, 92, 255, 0.15); font-weight: bold; color: var(--acc-1); }
+        .tree-chevron {
+            font-size: 0.65rem;
+            width: 1.2rem;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 150ms ease;
+            opacity: 0.6;
+        }
+        .tree-item.is-expanded > .tree-toggle > .tree-chevron { transform: rotate(90deg); }
+        .tree-icon {
+            margin-right: 0.5rem;
+            display: flex;
+            align-items: center;
+            color: #5b5df0;
+        }
+        .dark .tree-icon {
+            color: #93c5fd;
+        }
+        .tree-label {
+            font-size: 0.85rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .search-shell {
@@ -1156,7 +1332,7 @@
                 Get Model Question Papers
             </a>
             <div class="sidebar-credit pt-4 border-t border-slate-100 dark:border-slate-800">
-                <p class="text-[10px] text-slate-400 text-center mb-1">CRAFTED FOR S4 CS2</p>
+                <p class="text-[10px] text-slate-400 text-center mb-1">CRAFTED BY MABEL</p>
                 <a href="https://github.com/MabelMoncy" target="_blank" rel="noopener noreferrer" class="block text-xs font-bold text-primary-600 dark:text-primary-400 text-center hover:underline cursor-pointer">
                     Mabel Anto Moncy
                 </a>
@@ -1167,8 +1343,9 @@
     <!-- Main Content -->
     <main class="md:ml-64 pt-16 min-h-screen">
         <div id="contentHeader" class="hidden p-6 md:p-8 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
+            <nav id="breadcrumbTrail" class="breadcrumb-trail flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3 text-xs sm:text-sm font-semibold tracking-wide text-slate-500 dark:text-slate-400"></nav>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <h1 id="contentTitle" class="text-2xl font-black dark:text-white tracking-tight leading-tight whitespace-nowrap overflow-hidden text-ellipsis sm:flex-1 sm:min-w-0">Subject</h1>
+                <h1 id="contentTitle" class="text-2xl font-black dark:text-white tracking-tight leading-tight whitespace-nowrap overflow-hidden text-ellipsis sm:flex-1 sm:min-w-0">EduCrate | Notes Hub</h1>
                 <div id="sortContainer" class="hidden w-full sm:w-auto flex items-center justify-between sm:justify-end gap-2 sm:shrink-0">
                     <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Sort Files</span>
                     <select id="sortSelect" class="transition-all">
@@ -1185,7 +1362,7 @@
                     <img src="/logo.png" alt="EduCrate" width="80" height="80" class="w-full h-full object-cover" loading="lazy" decoding="async">
                 </div>
                 <h2 class="text-3xl font-extrabold dark:text-white mb-3">Welcome to EduCrate</h2>
-                <p class="text-slate-500 max-w-sm mx-auto leading-relaxed mb-6">The dedicated digital library for S4 Computer Science & Engineering Students.</p>
+                <p class="text-slate-500 max-w-sm mx-auto leading-relaxed mb-6">Your dedicated digital library for students.</p>
                 <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
                     <button id="browseSubjectsBtn" class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 hover:scale-105 transition-all shadow-lg shadow-primary-500/30 active:scale-95">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
