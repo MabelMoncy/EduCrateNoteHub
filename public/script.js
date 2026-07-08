@@ -555,6 +555,14 @@ function renderFolderTree(tree) {
         expandedIds.add(el.dataset.folderId);
     });
 
+    function isParentOfCurrent(node) {
+        if (node.id === currentFolderId) return true;
+        if (node.children) {
+            return node.children.some(isParentOfCurrent);
+        }
+        return false;
+    }
+
     function buildTreeHtml(node, level = 0) {
         if (!node.children || node.children.length === 0) {
             return '<li class="tree-item">' +
@@ -565,12 +573,14 @@ function renderFolderTree(tree) {
                 '</li>';
         }
 
-        const isExpanded = expandedIds.has(node.id) || (level === 0 && !expandedIds.has('initial'));
+        const isExpanded = expandedIds.has(node.id) || isParentOfCurrent(node);
         const childrenHtml = node.children.map(child => buildTreeHtml(child, level + 1)).join('');
         
         return '<li class="tree-item ' + (isExpanded ? 'is-expanded' : '') + '">' +
                 '<button class="tree-toggle ' + (node.id === currentFolderId ? 'is-active' : '') + '" data-folder-id="' + escapeHtml(node.id) + '" data-folder-name="' + escapeHtml(node.name) + '" style="padding-left: ' + (level * 0.75 + 0.5) + 'rem">' +
-                    '<span class="tree-chevron">▶</span>' +
+                    '<span class="tree-chevron flex items-center justify-center">' +
+                        '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>' +
+                    '</span>' +
                     '<span class="tree-icon">' + getSubjectIconSvg(node.name) + '</span>' +
                     '<span class="tree-label">' + escapeHtml(node.name) + '</span>' +
                 '</button>' +

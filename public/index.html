@@ -169,7 +169,6 @@
 
         nav,
         #sidebar,
-        #contentHeader,
         #searchResults,
         #pullRefreshIndicator,
         #pdfModal .relative.flex.flex-col.h-full.w-full.overflow-hidden,
@@ -1342,8 +1341,8 @@
     
     <!-- Main Content -->
     <main class="md:ml-64 pt-16 min-h-screen">
-        <div id="contentHeader" class="hidden p-6 md:p-8 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
-            <nav id="breadcrumbTrail" class="breadcrumb-trail flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3 text-xs sm:text-sm font-semibold tracking-wide text-slate-500 dark:text-slate-400"></nav>
+        <div id="contentHeader" class="hidden p-6 md:p-8 bg-transparent">
+            <div id="breadcrumbTrail" class="breadcrumb-trail flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3 text-xs sm:text-sm font-semibold tracking-wide text-slate-500 dark:text-slate-300"></div>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h1 id="contentTitle" class="text-2xl font-black dark:text-white tracking-tight leading-tight whitespace-nowrap overflow-hidden text-ellipsis sm:flex-1 sm:min-w-0">EduCrate | Notes Hub</h1>
                 <div id="sortContainer" class="hidden w-full sm:w-auto flex items-center justify-between sm:justify-end gap-2 sm:shrink-0">
