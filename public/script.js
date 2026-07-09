@@ -1,6 +1,6 @@
 const API_BASE = '/api';
 let searchTimeout;
-let cachedFolders = null;
+let cachedTree = null;
 let cachedFiles = {}; // Cache files per folder for faster navigation
 let activeSearchIndex = -1;
 let isMobile = window.innerWidth < 768;
@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     initTheme();
     setupEventListeners();
-    await loadFolders();
+    await loadFolderTree();
     await hydrateFromUrl();
 });
 
@@ -234,13 +234,13 @@ function setupEventListeners() {
                 return;
             }
             
-            let files = cachedFiles[folderId] || [];
-            let targetFile = files.find(f => f.id === fileId);
+            let cache = cachedFiles[folderId] || { files: [] };
+            let targetFile = cache.files.find(f => f.id === fileId);
             if (!targetFile) {
                 delete cachedFiles[folderId];
-                await selectFolder(folderId, (cachedFolders || []).find(f => f.id === folderId)?.name || '', { skipUrlSync: true });
-                files = cachedFiles[folderId] || [];
-                targetFile = files.find(f => f.id === fileId);
+                await selectFolder(folderId, 'Loading...', { skipUrlSync: true });
+                cache = cachedFiles[folderId] || { files: [] };
+                targetFile = cache.files.find(f => f.id === fileId);
             }
             if (targetFile) openPdf(targetFile, { skipHistoryPush: true, skipUrlSync: true });
             return;
@@ -274,13 +274,23 @@ function setupEventListeners() {
         } else {
             // Resume polling and do an immediate check
             startFolderPolling();
-            pollFolders();
+            pollFolderTree();
             if (currentFolderId) {
                 startFilePolling();
                 pollFiles();
             }
         }
     });
+
+    const breadcrumbTrail = document.getElementById('breadcrumbTrail');
+    if (breadcrumbTrail) {
+        breadcrumbTrail.addEventListener('click', (e) => {
+            const item = e.target.closest('.breadcrumb-item');
+            if (item && item.dataset.folderId) {
+                selectFolder(item.dataset.folderId, item.dataset.folderName);
+            }
+        }, { passive: true });
+    }
 }
 
 function closeSidebar() {
@@ -346,18 +356,18 @@ function updateThemeColor(isDark) {
 }
 
 // --- DATA ENGINE ---
-async function loadFolders() {
-    if (cachedFolders) {
-        renderFolders(cachedFolders);
-        startFolderPolling(); // Start polling even if cached
+async function loadFolderTree() {
+    if (cachedTree) {
+        renderFolderTree(cachedTree);
+        startFolderPolling();
         return;
     }
     try {
-        const res = await fetch(API_BASE + '/folders');
+        const res = await fetch(API_BASE + '/tree');
         const data = await res.json();
         if(data.success) {
-            cachedFolders = data.data.sort(naturalSort);
-            renderFolders(cachedFolders);
+            cachedTree = data.data;
+            renderFolderTree(cachedTree);
             startFolderPolling();
         }
     } catch(e) { console.error(e); }
@@ -366,9 +376,7 @@ async function loadFolders() {
 async function ensureFolderSelectedById(folderId, options = {}) {
     if (!folderId) return false;
     if (folderId === currentFolderId && cachedFiles[folderId]) return true;
-    const target = (cachedFolders || []).find(f => f.id === folderId);
-    if (!target) return false;
-    await selectFolder(folderId, target.name, options);
+    await selectFolder(folderId, 'Loading...', options);
     return true;
 }
 
@@ -381,13 +389,13 @@ async function hydrateFromUrl() {
     replaceUrlState(folderId, null);
 
     if (fileId) {
-        const files = cachedFiles[folderId] || [];
-        let targetFile = files.find(f => f.id === fileId);
+        const cache = cachedFiles[folderId] || { files: [] };
+        let targetFile = cache.files.find(f => f.id === fileId);
         if (!targetFile) {
             delete cachedFiles[folderId];
-            await selectFolder(folderId, (cachedFolders || []).find(f => f.id === folderId)?.name || '', { skipUrlSync: true });
-            const refreshed = cachedFiles[folderId] || [];
-            targetFile = refreshed.find(f => f.id === fileId);
+            await selectFolder(folderId, 'Loading...', { skipUrlSync: true });
+            const refreshed = cachedFiles[folderId] || { files: [] };
+            targetFile = refreshed.files.find(f => f.id === fileId);
         }
         if (targetFile) openPdf(targetFile);
     }
@@ -396,7 +404,7 @@ async function hydrateFromUrl() {
 // --- AUTO-SYNC POLLING ENGINE ---
 function startFolderPolling() {
     if (folderPollTimer) clearInterval(folderPollTimer);
-    folderPollTimer = setInterval(pollFolders, FOLDER_POLL_INTERVAL);
+    folderPollTimer = setInterval(pollFolderTree, FOLDER_POLL_INTERVAL);
 }
 
 function startFilePolling() {
@@ -411,58 +419,48 @@ function stopFilePolling() {
     }
 }
 
-async function pollFolders() {
+async function pollFolderTree() {
     try {
-        const res = await fetch(API_BASE + '/folders', {
+        const res = await fetch(API_BASE + '/tree', {
             headers: { 'Cache-Control': 'no-cache' }
         });
         const data = await res.json();
         if (data.success) {
-            const newFolders = data.data.sort(naturalSort);
-            if (!areFoldersEqual(cachedFolders, newFolders)) {
-                cachedFolders = newFolders;
-                renderFolders(cachedFolders);
-                // If a folder was deleted that we're currently viewing, go back to welcome
-                if (currentFolderId && !newFolders.find(f => f.id === currentFolderId)) {
-                    currentFolderId = null;
-                    currentFolderName = null;
-                    updateActiveFolderButton();
-                    replaceUrlState(null, null);
-                    stopFilePolling();
-                    setSortVisibility(false);
-                    elements.contentHeader.classList.add('hidden');
-                    elements.filesGrid.innerHTML = '';
-                    elements.emptyState.classList.add('hidden');
-                    elements.welcomeState.classList.remove('hidden');
-                }
+            if (JSON.stringify(cachedTree) !== JSON.stringify(data.data)) {
+                cachedTree = data.data;
+                renderFolderTree(cachedTree);
             }
         }
-    } catch (e) { console.error('Folder poll error:', e); }
+    } catch (e) { console.error('Tree poll error:', e); }
 }
 
 async function pollFiles() {
     if (!currentFolderId) return;
     try {
-        const res = await fetch(API_BASE + '/files/' + currentFolderId, {
+        const res = await fetch(API_BASE + '/folder-contents/' + currentFolderId, {
             headers: { 'Cache-Control': 'no-cache' }
         });
         const data = await res.json();
         if (data.success) {
-            const newFiles = data.data.sort(naturalSort);
-            if (!areFilesEqual(cachedFiles[currentFolderId], newFiles)) {
-                cachedFiles[currentFolderId] = newFiles;
-                if (newFiles.length > 0) {
-                    renderFiles(sortFilesByModified(newFiles));
+            const newFiles = data.data.files || [];
+            const newFolders = data.data.folders || [];
+            const breadcrumbs = data.data.breadcrumbs || [];
+            const currentCache = cachedFiles[currentFolderId] || { files: [], folders: [] };
+            
+            if (!areFilesEqual(currentCache.files, newFiles) || !areFoldersEqual(currentCache.folders, newFolders)) {
+                cachedFiles[currentFolderId] = { folders: newFolders, files: newFiles, breadcrumbs };
+                if (newFiles.length > 0 || newFolders.length > 0) {
+                    renderFolderContents(newFolders, sortFilesByModified(newFiles));
                     elements.emptyState.classList.add('hidden');
                 } else {
                     elements.filesGrid.innerHTML = '';
                     elements.emptyState.classList.remove('hidden');
                 }
+                renderBreadcrumbs(breadcrumbs);
             }
         }
     } catch (e) { console.error('File poll error:', e); }
 }
-
 function areFoldersEqual(a, b) {
     if (!a || !b || a.length !== b.length) return false;
     for (let i = 0; i < a.length; i++) {
@@ -470,6 +468,7 @@ function areFoldersEqual(a, b) {
     }
     return true;
 }
+
 
 function areFilesEqual(a, b) {
     if (!a || !b || a.length !== b.length) return false;
@@ -502,30 +501,14 @@ function handleSortChange(e) {
     currentSortOrder = e.target.value === 'oldToNew' ? 'oldToNew' : 'newToOld';
 
     if (currentFolderId && cachedFiles[currentFolderId]) {
-        renderFiles(sortFilesByModified(cachedFiles[currentFolderId]));
+        const cache = cachedFiles[currentFolderId];
+        renderFolderContents(cache.folders, sortFilesByModified(cache.files));
     }
 }
 
 function setSortVisibility(visible) {
     if (!elements.sortContainer) return;
     elements.sortContainer.classList.toggle('hidden', !visible);
-}
-
-function renderFolders(folders) {
-    const html = folders.map(f =>
-        '<button data-folder-id="' + escapeHtml(f.id) + '" data-folder-name="' + escapeHtml(f.name) + '" class="folder-btn active:scale-[0.98]">' +
-            '<span class="folder-icon" aria-hidden="true">' + getSubjectIconSvg(f.name) + '</span>' +
-            '<span class="folder-label">' + escapeHtml(f.name) + '</span>' +
-            '<span class="folder-meta-dot" aria-hidden="true"></span>' +
-        '</button>'
-    ).join('');
-    
-    requestAnimationFrame(() => {
-        elements.foldersList.removeEventListener('click', handleFolderClick);
-        elements.foldersList.innerHTML = html;
-        updateActiveFolderButton();
-        elements.foldersList.addEventListener('click', handleFolderClick, { passive: true });
-    });
 }
 
 function getSubjectIconSvg(name = '') {
@@ -560,21 +543,102 @@ function getSubjectIconSvg(name = '') {
         return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 3a3 3 0 0 0-3 3v1a3 3 0 0 0 0 6v1a3 3 0 0 0 4.5 2.6M15 3a3 3 0 0 1 3 3v1a3 3 0 0 1 0 6v1a3 3 0 0 1-4.5 2.6" stroke-width="2" stroke-linecap="round"/><path d="M12 5v14M8 9h2M14 9h2M8 15h2M14 15h2" stroke-width="2" stroke-linecap="round"/></svg>';
     }
 
+    // Default book icon
     return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke-width="2" stroke-linecap="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" stroke-width="2" stroke-linejoin="round"/></svg>';
 }
 
+function renderFolderTree(tree) {
+    if (!tree || !tree.children) return;
+    
+    const expandedIds = new Set();
+    document.querySelectorAll('.tree-item.is-expanded > .tree-toggle').forEach(el => {
+        expandedIds.add(el.dataset.folderId);
+    });
+
+    function isParentOfCurrent(node) {
+        if (node.id === currentFolderId) return true;
+        if (node.children) {
+            return node.children.some(isParentOfCurrent);
+        }
+        return false;
+    }
+
+    function buildTreeHtml(node, level = 0) {
+        if (!node.children || node.children.length === 0) {
+            return '<li class="tree-item">' +
+                    '<button class="tree-toggle tree-leaf ' + (node.id === currentFolderId ? 'is-active' : '') + '" data-folder-id="' + escapeHtml(node.id) + '" data-folder-name="' + escapeHtml(node.name) + '" style="padding-left: ' + (level * 0.75 + 0.5) + 'rem">' +
+                        '<span class="tree-icon">' + getSubjectIconSvg(node.name) + '</span>' +
+                        '<span class="tree-label">' + escapeHtml(node.name) + '</span>' +
+                    '</button>' +
+                '</li>';
+        }
+
+        const isExpanded = expandedIds.has(node.id) || isParentOfCurrent(node);
+        const childrenHtml = node.children.map(child => buildTreeHtml(child, level + 1)).join('');
+        
+        return '<li class="tree-item ' + (isExpanded ? 'is-expanded' : '') + '">' +
+                '<button class="tree-toggle ' + (node.id === currentFolderId ? 'is-active' : '') + '" data-folder-id="' + escapeHtml(node.id) + '" data-folder-name="' + escapeHtml(node.name) + '" style="padding-left: ' + (level * 0.75 + 0.5) + 'rem">' +
+                    '<span class="tree-chevron flex items-center justify-center">' +
+                        '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>' +
+                    '</span>' +
+                    '<span class="tree-icon">' + getSubjectIconSvg(node.name) + '</span>' +
+                    '<span class="tree-label">' + escapeHtml(node.name) + '</span>' +
+                '</button>' +
+                '<ul class="tree-children ' + (isExpanded ? '' : 'hidden') + '">' +
+                    childrenHtml +
+                '</ul>' +
+            '</li>';
+    }
+
+    const html = '<ul class="tree-list">' + tree.children.map(child => buildTreeHtml(child, 0)).join('') + '</ul>';
+    
+    requestAnimationFrame(() => {
+        elements.foldersList.removeEventListener('click', handleTreeClick);
+        elements.foldersList.innerHTML = html;
+        elements.foldersList.addEventListener('click', handleTreeClick, { passive: true });
+        expandedIds.add('initial');
+    });
+}
+
 function updateActiveFolderButton() {
-    const buttons = elements.foldersList.querySelectorAll('.folder-btn');
+    const buttons = elements.foldersList.querySelectorAll('.tree-toggle');
     buttons.forEach(btn => {
         const isActive = btn.dataset.folderId === currentFolderId;
         btn.classList.toggle('is-active', isActive);
         btn.setAttribute('aria-current', isActive ? 'page' : 'false');
+        
+        if (isActive) {
+            let parentItem = btn.closest('.tree-children')?.closest('.tree-item');
+            while (parentItem) {
+                parentItem.classList.add('is-expanded');
+                parentItem.querySelector('.tree-children').classList.remove('hidden');
+                parentItem = parentItem.parentElement.closest('.tree-item');
+            }
+        }
     });
 }
 
-function handleFolderClick(e) {
-    const btn = e.target.closest('.folder-btn');
-    if (btn) selectFolder(btn.dataset.folderId, btn.dataset.folderName);
+function handleTreeClick(e) {
+    const toggleBtn = e.target.closest('.tree-toggle');
+    if (!toggleBtn) return;
+    
+    const chevron = e.target.closest('.tree-chevron');
+    if (chevron && !toggleBtn.classList.contains('tree-leaf')) {
+        const treeItem = toggleBtn.closest('.tree-item');
+        const childrenList = treeItem.querySelector('.tree-children');
+        const isExpanded = treeItem.classList.contains('is-expanded');
+        
+        if (isExpanded) {
+            treeItem.classList.remove('is-expanded');
+            childrenList.classList.add('hidden');
+        } else {
+            treeItem.classList.add('is-expanded');
+            childrenList.classList.remove('hidden');
+        }
+        return;
+    }
+
+    selectFolder(toggleBtn.dataset.folderId, toggleBtn.dataset.folderName);
 }
 
 async function selectFolder(id, name, options = {}) {
@@ -593,43 +657,51 @@ async function selectFolder(id, name, options = {}) {
     if (!options.skipUrlSync) {
         replaceUrlState(id, null);
     }
-    
-    // Start polling files for this folder
-    startFilePolling();
 
     if (isMobile) {
         closeSidebar();
     }
 
+    renderSkeletons();
+
     if (cachedFiles[id]) {
-        renderFiles(sortFilesByModified(cachedFiles[id]));
+        const cache = cachedFiles[id];
+        elements.contentTitle.textContent = cache.folderName || name;
+        renderFolderContents(cache.folders, sortFilesByModified(cache.files));
+        renderBreadcrumbs(cache.breadcrumbs);
+        // Start polling after initial render is done
+        startFilePolling();
         return;
     }
 
-    const skeletonCount = isMobile ? 2 : 3;
-    elements.filesGrid.innerHTML = Array.from({ length: skeletonCount }, () =>
-        '<div class="file-skeleton p-3 sm:p-4">' +
-            '<div class="thumbnail-shell shimmer rounded-xl mb-3"></div>' +
-            '<div class="h-4 shimmer rounded mb-2"></div>' +
-            '<div class="h-3 w-20 shimmer rounded"></div>' +
-        '</div>'
-    ).join('');
-
     try {
-        const res = await fetch(API_BASE + '/files/' + id);
+        const res = await fetch(API_BASE + '/folder-contents/' + id);
         const data = await res.json();
-        if(data.success && data.data.length > 0) {
-            const sortedFiles = data.data.sort(naturalSort);
-            cachedFiles[id] = sortedFiles;
-            renderFiles(sortFilesByModified(sortedFiles));
+        if(data.success) {
+            const { folders, files, breadcrumbs, folderName } = data.data;
+            cachedFiles[id] = { folders, files, breadcrumbs, folderName };
+            if (id === currentFolderId) {
+                elements.contentTitle.textContent = folderName;
+                renderFolderContents(folders, sortFilesByModified(files));
+                renderBreadcrumbs(breadcrumbs);
+                if (folders.length === 0 && files.length === 0) {
+                    elements.emptyState.classList.remove('hidden');
+                }
+            }
+            // Start polling after initial render is done
+            startFilePolling();
         } else {
-            elements.filesGrid.innerHTML = '';
-            elements.emptyState.classList.remove('hidden');
+            if (id === currentFolderId) {
+                elements.filesGrid.innerHTML = '';
+                elements.emptyState.classList.remove('hidden');
+            }
         }
     } catch(e) { 
         console.error(e);
-        elements.filesGrid.innerHTML = '';
-        elements.emptyState.classList.remove('hidden');
+        if (id === currentFolderId) {
+            elements.filesGrid.innerHTML = '';
+            elements.emptyState.classList.remove('hidden');
+        }
     }
 }
 
@@ -706,11 +778,11 @@ function hideRefreshIndicator() {
 async function performFullRefresh() {
     // Refresh folders
     try {
-        const folderRes = await fetch(API_BASE + '/folders', { headers: { 'Cache-Control': 'no-cache' } });
+        const folderRes = await fetch(API_BASE + '/tree', { headers: { 'Cache-Control': 'no-cache' } });
         const folderData = await folderRes.json();
         if (folderData.success) {
-            cachedFolders = folderData.data.sort(naturalSort);
-            renderFolders(cachedFolders);
+            cachedTree = folderData.data;
+            renderFolderTree(cachedTree);
         }
     } catch (e) { console.error('Refresh folders error:', e); }
     
@@ -718,18 +790,21 @@ async function performFullRefresh() {
     if (currentFolderId) {
         delete cachedFiles[currentFolderId];
         try {
-            const res = await fetch(API_BASE + '/files/' + currentFolderId, {
+            const res = await fetch(API_BASE + '/folder-contents/' + currentFolderId, {
                 headers: { 'Cache-Control': 'no-cache' }
             });
             const data = await res.json();
-            if (data.success && data.data.length > 0) {
-                const sortedFiles = data.data.sort(naturalSort);
-                cachedFiles[currentFolderId] = sortedFiles;
-                renderFiles(sortFilesByModified(sortedFiles));
-                elements.emptyState.classList.add('hidden');
-            } else {
-                elements.filesGrid.innerHTML = '';
-                elements.emptyState.classList.remove('hidden');
+            if (data.success) {
+                const { folders, files, breadcrumbs, folderName } = data.data;
+                cachedFiles[currentFolderId] = { folders, files, breadcrumbs, folderName };
+                renderFolderContents(folders, sortFilesByModified(files));
+                renderBreadcrumbs(breadcrumbs);
+                if (folders.length > 0 || files.length > 0) {
+                    elements.emptyState.classList.add('hidden');
+                } else {
+                    elements.filesGrid.innerHTML = '';
+                    elements.emptyState.classList.remove('hidden');
+                }
             }
         } catch (e) {
             console.error('Refresh files error:', e);
@@ -737,13 +812,62 @@ async function performFullRefresh() {
     }
 }
 
-function renderFiles(files) {
+function renderSkeletons() {
+    const skeletonCount = isMobile ? 2 : 3;
+    elements.filesGrid.innerHTML = Array.from({ length: skeletonCount }, () =>
+        '<div class="file-skeleton p-3 sm:p-4">' +
+            '<div class="thumbnail-shell shimmer rounded-xl mb-3"></div>' +
+            '<div class="h-4 shimmer rounded mb-2"></div>' +
+            '<div class="h-3 w-20 shimmer rounded"></div>' +
+        '</div>'
+    ).join('');
+}
+
+function buildFolderCardHtml(folder) {
+    return '<div class="folder-card" data-folder-id="' + escapeHtml(folder.id) + '" data-folder-name="' + escapeHtml(folder.name) + '">' +
+        '<div class="folder-card-icon">' +
+            '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>' +
+        '</div>' +
+        '<div class="folder-card-name">' + escapeHtml(folder.name) + '</div>' +
+    '</div>';
+}
+
+function renderBreadcrumbs(breadcrumbs) {
+    const nav = document.getElementById('breadcrumbTrail');
+    if (!nav) return;
+    
+    if (!breadcrumbs || breadcrumbs.length === 0) {
+        nav.innerHTML = '';
+        return;
+    }
+
+    const html = breadcrumbs.map((crumb, index) => {
+        const isLast = index === breadcrumbs.length - 1;
+        if (isLast) {
+            return '<span class="breadcrumb-item cursor-default text-primary-600 dark:text-primary-400 font-bold">' + escapeHtml(crumb.name) + '</span>';
+        }
+        return '<span class="breadcrumb-item" data-folder-id="' + escapeHtml(crumb.id) + '" data-folder-name="' + escapeHtml(crumb.name) + '">' + escapeHtml(crumb.name) + '</span>' +
+               '<span class="breadcrumb-separator">›</span>';
+    }).join('');
+    
+    nav.innerHTML = html;
+}
+
+function renderFolderContents(folders, files) {
     const lcpIndex = files.findIndex(file => file.thumbnailUrl);
     updateLcpImagePreload(lcpIndex === -1 ? null : files[lcpIndex].thumbnailUrl);
 
+    const folderHtml = (folders || []).map(buildFolderCardHtml).join('');
     const cards = new Array(files.length);
     const currentToken = ++fileRenderToken;
     let cursor = 0;
+
+    if (files.length === 0) {
+        elements.filesGrid.removeEventListener('click', handleFileClick);
+        elements.filesGrid.innerHTML = folderHtml;
+        elements.filesGrid.addEventListener('click', handleFileClick, { passive: true });
+        return;
+    }
 
     const processChunk = (deadline) => {
         if (currentToken !== fileRenderToken) return;
@@ -770,7 +894,7 @@ function renderFiles(files) {
         requestAnimationFrame(() => {
             if (currentToken !== fileRenderToken) return;
             elements.filesGrid.removeEventListener('click', handleFileClick);
-            elements.filesGrid.innerHTML = cards.join('');
+            elements.filesGrid.innerHTML = folderHtml + cards.join('');
             elements.filesGrid.addEventListener('click', handleFileClick, { passive: true });
         });
     };
@@ -811,6 +935,12 @@ function buildFileCardHtml(file, isLcpImage) {
 }
 
 function handleFileClick(e) {
+    const folderCard = e.target.closest('.folder-card');
+    if (folderCard && folderCard.dataset.folderId) {
+        selectFolder(folderCard.dataset.folderId, folderCard.dataset.folderName);
+        return;
+    }
+
     const card = e.target.closest('.file-card');
     if (card) openPdf(JSON.parse(card.dataset.file));
 }

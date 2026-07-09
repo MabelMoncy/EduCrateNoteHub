@@ -360,16 +360,16 @@ async function listSubfoldersAcrossParents(driveClient, parentIds) {
         const parentQuery = parentChunk.map((id) => `'${id}' in parents`).join(' or ');
         const folderCandidates = await listDriveFilesPaginated(driveClient, {
             q: `(${parentQuery}) and ${FOLDER_OR_SHORTCUT_TO_FOLDER_QUERY} and trashed = false`,
-            fields: 'nextPageToken, files(id, name, mimeType, shortcutDetails(targetId,targetMimeType))',
+            fields: 'nextPageToken, files(id, name, mimeType, parents, shortcutDetails(targetId,targetMimeType))',
             orderBy: 'name'
         });
         allFolderCandidates.push(...folderCandidates);
     }
 
-    const folderIds = [];
+    const folders = [];
     for (const candidate of allFolderCandidates) {
         if (candidate?.mimeType === 'application/vnd.google-apps.folder' && isValidDriveId(candidate.id)) {
-            folderIds.push(candidate.id);
+            folders.push({ id: candidate.id, name: candidate.name, parents: candidate.parents || [] });
             continue;
         }
 
@@ -378,11 +378,11 @@ async function listSubfoldersAcrossParents(driveClient, parentIds) {
             candidate?.shortcutDetails?.targetMimeType === 'application/vnd.google-apps.folder' &&
             isValidDriveId(candidate?.shortcutDetails?.targetId)
         ) {
-            folderIds.push(candidate.shortcutDetails.targetId);
+            folders.push({ id: candidate.shortcutDetails.targetId, name: candidate.name, parents: candidate.parents || [] });
         }
     }
 
-    return folderIds;
+    return folders;
 }
 
 async function listPdfFilesRecursively(driveClient, folderId) {
@@ -413,9 +413,9 @@ async function listPdfFilesRecursively(driveClient, folderId) {
             }
         }
 
-        for (const nextFolderId of subfolders) {
-            if (isValidDriveId(nextFolderId) && !visited.has(nextFolderId)) {
-                queue.push(nextFolderId);
+        for (const nextFolder of subfolders) {
+            if (isValidDriveId(nextFolder.id) && !visited.has(nextFolder.id)) {
+                queue.push(nextFolder.id);
             }
         }
     }
@@ -473,6 +473,158 @@ app.get('/api/files/:folderId', async (req, res) => {
     } catch (error) {
         console.error('Get files error:', error.message);
         res.status(500).json({ success: false, error: 'Failed to retrieve files' });
+    }
+});
+
+let cachedTree = null;
+let lastTreeFetchTime = 0;
+const TREE_CACHE_TTL = 120000; // 2 minutes
+
+async function buildFolderTree(driveClient) {
+    const rootNode = { id: ROOT_FOLDER_ID, name: 'Notes', children: [] };
+    const nodeMap = new Map();
+    nodeMap.set(ROOT_FOLDER_ID, rootNode);
+    
+    const queue = [ROOT_FOLDER_ID];
+    const visited = new Set([ROOT_FOLDER_ID]);
+    
+    while (queue.length > 0 && visited.size < MAX_RECURSIVE_FOLDER_SCAN) {
+        const currentBatch = [];
+        while (queue.length > 0 && currentBatch.length < DRIVE_PARENT_QUERY_BATCH_SIZE) {
+            currentBatch.push(queue.shift());
+        }
+        
+        const subfolders = await listSubfoldersAcrossParents(driveClient, currentBatch);
+        
+        for (const folder of subfolders) {
+            if (isValidDriveId(folder.id) && !visited.has(folder.id)) {
+                visited.add(folder.id);
+                queue.push(folder.id);
+                
+                const newNode = { id: folder.id, name: folder.name, children: [] };
+                nodeMap.set(folder.id, newNode);
+                
+                // attach to parent
+                for (const parentId of folder.parents) {
+                    const parentNode = nodeMap.get(parentId);
+                    if (parentNode) {
+                        parentNode.children.push(newNode);
+                        break; // Attach to the first valid parent in our tree
+                    }
+                }
+            }
+        }
+    }
+    
+    // Sort children recursively
+    function sortTree(node) {
+        if (node.children && node.children.length > 0) {
+            node.children.sort(naturalSort);
+            for (const child of node.children) {
+                sortTree(child);
+            }
+        }
+    }
+    sortTree(rootNode);
+    
+    return rootNode;
+}
+
+app.get('/api/tree', async (req, res) => {
+    try {
+        const driveClient = initDriveClient();
+        if (!driveClient) {
+            res.status(500).json({ success: false, error: 'Drive client initialization failed' });
+            return;
+        }
+        
+        const now = Date.now();
+        if (!cachedTree || (now - lastTreeFetchTime > TREE_CACHE_TTL)) {
+            cachedTree = await buildFolderTree(driveClient);
+            lastTreeFetchTime = now;
+        }
+        
+        res.setHeader('Cache-Control', 'public, max-age=120');
+        res.json({ success: true, data: cachedTree });
+    } catch (error) {
+        console.error('Get tree error:', error.message);
+        res.status(500).json({ success: false, error: 'Failed to retrieve tree' });
+    }
+});
+
+app.get('/api/folder-contents/:folderId', async (req, res) => {
+    try {
+        const { folderId } = req.params;
+        if (!isValidDriveId(folderId)) {
+            res.status(400).json({ success: false, error: 'Invalid folder ID' });
+            return;
+        }
+
+        const driveClient = initDriveClient();
+        if (!driveClient) {
+            res.status(500).json({ success: false, error: 'Drive client initialization failed' });
+            return;
+        }
+
+        // Get subfolders
+        const subfoldersRaw = await listSubfoldersAcrossParents(driveClient, [folderId]);
+        const folders = subfoldersRaw.map(f => ({ id: f.id, name: f.name })).sort(naturalSort);
+
+        // Get files
+        const pdfFiles = await listPdfFilesAcrossParents(driveClient, [folderId]);
+        const files = pdfFiles
+            .map(mapDriveFileToApiFile)
+            .filter(Boolean)
+            .sort(naturalSort);
+            
+        // Get breadcrumbs by walking up parents
+        const breadcrumbs = [];
+        let currentId = folderId;
+        const maxDepth = 20;
+        let depth = 0;
+        let folderName = 'Folder';
+        
+        while (currentId && depth < maxDepth) {
+            if (currentId === ROOT_FOLDER_ID) {
+                breadcrumbs.unshift({ id: currentId, name: 'Notes' });
+                if (currentId === folderId) {
+                    folderName = 'Notes';
+                }
+                break;
+            }
+            try {
+                const meta = await driveClient.files.get({
+                    fileId: currentId,
+                    fields: 'id, name, parents',
+                    supportsAllDrives: true
+                });
+                
+                if (currentId === folderId) {
+                    folderName = meta.data.name;
+                }
+                
+                breadcrumbs.unshift({ id: meta.data.id, name: meta.data.name });
+                currentId = (meta.data.parents && meta.data.parents.length > 0) ? meta.data.parents[0] : null;
+            } catch (e) {
+                break;
+            }
+            depth++;
+        }
+        
+        res.setHeader('Cache-Control', 'public, max-age=30');
+        res.json({ 
+            success: true, 
+            data: {
+                folderId,
+                folderName,
+                breadcrumbs,
+                folders,
+                files
+            }
+        });
+    } catch (error) {
+        console.error('Get folder contents error:', error.message);
+        res.status(500).json({ success: false, error: 'Failed to retrieve folder contents' });
     }
 });
 
