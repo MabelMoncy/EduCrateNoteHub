@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
+
 <head>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZCFG4LVQTC"></script>
     <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
 
-    gtag('config', 'G-ZCFG4LVQTC');
+        gtag('config', 'G-ZCFG4LVQTC');
     </script>
 
     <meta charset="UTF-8">
@@ -23,7 +24,12 @@
     <link id="lcpImagePreload" rel="preload" as="image" href="/logo.png">
     <link rel="stylesheet" href="/styles.css">
     <style>
-        .shimmer { position: relative; overflow: hidden; background-color: #f1f5f9; }
+        .shimmer {
+            position: relative;
+            overflow: hidden;
+            background-color: #f1f5f9;
+        }
+
         .shimmer::after {
             content: "";
             position: absolute;
@@ -33,26 +39,96 @@
             animation: shim 1.5s infinite;
             will-change: transform;
         }
-        @keyframes shim { to { transform: translateX(100%); } }
-        .dark .shimmer { background-color: #131b4a; }
-        .dark .shimmer::after { background: linear-gradient(90deg, transparent 0%, rgba(42, 57, 125, 0.75) 50%, transparent 100%); }
-        #foldersList { min-height: 16rem; }
-        .main-content-shell { min-height: calc(100vh - 4rem); }
-        .thumbnail-shell { width: 100%; aspect-ratio: 16 / 9; }
-        #searchWrapper { min-height: 2.75rem; }
-        #searchBarContainer { min-height: 2.5rem; }
-        #searchResults { min-height: 3rem; }
-        #pdfContainer { min-height: 50vh; }
-        body.modal-open { overflow: hidden; }
+
+        @keyframes shim {
+            to {
+                transform: translateX(100%);
+            }
+        }
+
+        .dark .shimmer {
+            background-color: #131b4a;
+        }
+
+        .dark .shimmer::after {
+            background: linear-gradient(90deg, transparent 0%, rgba(42, 57, 125, 0.75) 50%, transparent 100%);
+        }
+
+        #foldersList {
+            min-height: 16rem;
+        }
+
+        .main-content-shell {
+            min-height: calc(100vh - 4rem);
+        }
+
+        .thumbnail-shell {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+        }
+
+        #searchWrapper {
+            min-height: 2.75rem;
+        }
+
+        #searchBarContainer {
+            min-height: 2.5rem;
+        }
+
+        #searchResults {
+            min-height: 3rem;
+        }
+
+        #pdfContainer {
+            min-height: 50vh;
+        }
+
+        body.modal-open {
+            overflow: hidden;
+        }
+
         /* Smooth scrolling for touch devices */
-        * { -webkit-tap-highlight-color: transparent; }
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+
         /* PDF Viewer Styles - Mobile Optimized */
-        #pdfIframe { border: none; width: 100%; height: 100%; background: white; }
+        #pdfIframe {
+            border: none;
+            width: 100%;
+            height: 100%;
+            background: white;
+        }
+
         /* Pull-to-refresh indicator */
-        #pullRefreshIndicator { position: fixed; top: 64px; left: 50%; transform: translateX(-50%) translateY(-60px); z-index: 55; transition: transform 0.2s ease, opacity 0.2s ease; opacity: 0; pointer-events: none; }
-        #pullRefreshIndicator.visible { opacity: 1; }
-        #pullRefreshIndicator.refreshing svg { animation: spin 0.8s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        #pullRefreshIndicator {
+            position: fixed;
+            top: 64px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-60px);
+            z-index: 55;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #pullRefreshIndicator.visible {
+            opacity: 1;
+        }
+
+        #pullRefreshIndicator.refreshing svg {
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
 
         :root {
             --bg-0: #f6f8ff;
@@ -128,30 +204,53 @@
         }
 
         @keyframes bgDrift {
-            0% { transform: translate3d(-2%, -1%, 0) scale(1); }
-            100% { transform: translate3d(2%, 1%, 0) scale(1.06); }
+            0% {
+                transform: translate3d(-2%, -1%, 0) scale(1);
+            }
+
+            100% {
+                transform: translate3d(2%, 1%, 0) scale(1.06);
+            }
         }
 
         @keyframes textureShift {
-            from { transform: translate3d(0, 0, 0); }
-            to { transform: translate3d(-40px, -20px, 0); }
+            from {
+                transform: translate3d(0, 0, 0);
+            }
+
+            to {
+                transform: translate3d(-40px, -20px, 0);
+            }
         }
 
         @keyframes sidebarColorFloat {
-            0% { transform: translate3d(-2%, -1%, 0) scale(1); }
-            100% { transform: translate3d(2%, 1%, 0) scale(1.08); }
+            0% {
+                transform: translate3d(-2%, -1%, 0) scale(1);
+            }
+
+            100% {
+                transform: translate3d(2%, 1%, 0) scale(1.08);
+            }
         }
 
         @keyframes sidebarTextureDrift {
-            from { transform: translate3d(0, 0, 0); }
-            to { transform: translate3d(-30px, -14px, 0); }
+            from {
+                transform: translate3d(0, 0, 0);
+            }
+
+            to {
+                transform: translate3d(-30px, -14px, 0);
+            }
         }
 
         @keyframes neonZoomPulse {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: scale(1);
                 opacity: 1;
             }
+
             50% {
                 transform: scale(1.04);
                 opacity: 0.9;
@@ -245,7 +344,7 @@
             animation: sidebarTextureDrift 18s linear infinite;
         }
 
-        #sidebar > * {
+        #sidebar>* {
             position: relative;
             z-index: 1;
         }
@@ -322,7 +421,7 @@
             scrollbar-color: rgba(123, 92, 255, 0.35) transparent;
         }
 
-        #foldersList > * + * {
+        #foldersList>*+* {
             margin-top: 0 !important;
         }
 
@@ -527,7 +626,7 @@
             text-align: center;
         }
 
-        .tree-item.is-expanded > .tree-toggle .tree-chevron {
+        .tree-item.is-expanded>.tree-toggle .tree-chevron {
             transform: rotate(90deg);
         }
 
@@ -714,11 +813,24 @@
         }
 
         /* Folder Card and Breadcrumbs */
-        .breadcrumb-trail { margin-bottom: 0.75rem; }
-        .breadcrumb-item { cursor: pointer; transition: color 150ms ease; }
-        .breadcrumb-item:hover { color: var(--acc-1); }
-        .breadcrumb-separator { margin: 0 0.25rem; opacity: 0.5; }
-        
+        .breadcrumb-trail {
+            margin-bottom: 0.75rem;
+        }
+
+        .breadcrumb-item {
+            cursor: pointer;
+            transition: color 150ms ease;
+        }
+
+        .breadcrumb-item:hover {
+            color: var(--acc-1);
+        }
+
+        .breadcrumb-separator {
+            margin: 0 0.25rem;
+            opacity: 0.5;
+        }
+
         .folder-card {
             background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
             border-radius: 1rem;
@@ -730,15 +842,18 @@
             transition: all 180ms ease;
             cursor: pointer;
         }
+
         .dark .folder-card {
             background: linear-gradient(145deg, rgba(13, 20, 54, 0.9), rgba(11, 17, 48, 0.7));
             border-color: rgba(143, 162, 255, 0.15);
         }
+
         .folder-card:hover {
             transform: translateY(-2px);
             border-color: rgba(123, 92, 255, 0.4);
             box-shadow: 0 10px 25px rgba(79, 70, 229, 0.12);
         }
+
         .folder-card-icon {
             color: #5b5df0;
             background: rgba(123, 92, 255, 0.1);
@@ -748,10 +863,12 @@
             align-items: center;
             justify-content: center;
         }
+
         .dark .folder-card-icon {
             color: #93c5fd;
             background: rgba(143, 162, 255, 0.1);
         }
+
         .folder-card-name {
             font-weight: 700;
             font-size: 0.95rem;
@@ -760,11 +877,24 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        
+
         /* Sidebar Tree */
-        .tree-list { list-style: none; padding: 0; margin: 0; }
-        .tree-children { padding-left: 0.75rem; border-left: 1px solid rgba(99, 102, 241, 0.1); margin-left: 0.75rem; }
-        .dark .tree-children { border-left-color: rgba(143, 162, 255, 0.1); }
+        .tree-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .tree-children {
+            padding-left: 0.75rem;
+            border-left: 1px solid rgba(99, 102, 241, 0.1);
+            margin-left: 0.75rem;
+        }
+
+        .dark .tree-children {
+            border-left-color: rgba(143, 162, 255, 0.1);
+        }
+
         .tree-toggle {
             display: flex;
             align-items: center;
@@ -777,8 +907,17 @@
             margin-bottom: 2px;
             cursor: pointer;
         }
-        .tree-toggle:hover { background: rgba(123, 92, 255, 0.1); }
-        .tree-toggle.is-active { background: rgba(123, 92, 255, 0.15); font-weight: bold; color: var(--acc-1); }
+
+        .tree-toggle:hover {
+            background: rgba(123, 92, 255, 0.1);
+        }
+
+        .tree-toggle.is-active {
+            background: rgba(123, 92, 255, 0.15);
+            font-weight: bold;
+            color: var(--acc-1);
+        }
+
         .tree-chevron {
             font-size: 0.65rem;
             width: 1.2rem;
@@ -788,16 +927,22 @@
             transition: transform 150ms ease;
             opacity: 0.6;
         }
-        .tree-item.is-expanded > .tree-toggle > .tree-chevron { transform: rotate(90deg); }
+
+        .tree-item.is-expanded>.tree-toggle>.tree-chevron {
+            transform: rotate(90deg);
+        }
+
         .tree-icon {
             margin-right: 0.5rem;
             display: flex;
             align-items: center;
             color: #5b5df0;
         }
+
         .dark .tree-icon {
             color: #93c5fd;
         }
+
         .tree-label {
             font-size: 0.85rem;
             white-space: nowrap;
@@ -1090,7 +1235,7 @@
         }
 
         @media (max-width: 767px) {
-            nav > div {
+            nav>div {
                 height: 4rem;
                 padding-left: 0.8rem;
                 padding-right: 0.8rem;
@@ -1242,7 +1387,10 @@
         }
 
         @media (prefers-reduced-motion: reduce) {
-            html { scroll-behavior: auto !important; }
+            html {
+                scroll-behavior: auto !important;
+            }
+
             .shimmer,
             #pullRefreshIndicator.refreshing svg,
             body::before,
@@ -1263,90 +1411,135 @@
         }
     </style>
 </head>
+
 <body class="min-h-screen font-sans selection:bg-primary-100 dark:selection:bg-primary-900">
-    
+
     <!-- Navigation -->
-    <nav class="fixed top-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 z-[60]">
-    <div class="flex items-center justify-between px-4 h-16 max-w-7xl mx-auto">
-        
-        <!-- Left Section: Menu & Logo -->
-        <div id="logoContainer" class="flex items-center gap-3 transition-[transform,opacity] duration-300">
-            <button id="menuBtn" aria-label="Open sidebar" class="icon-btn md:hidden p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-            </button>
-            <a href="/" class="flex items-center">
-                <span class="text-xl font-extrabold text-primary-600 dark:text-primary-400 tracking-tight">EduCrate</span>
-            </a>
-        </div>
+    <nav
+        class="fixed top-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 z-[60]">
+        <div class="flex items-center justify-between px-4 h-16 max-w-7xl mx-auto">
 
-        <!-- Center Section: Search Bar -->
-        <div id="searchWrapper" class="flex-1 flex justify-end md:justify-center items-center px-2 transition-[transform,opacity] duration-300">
-            <!-- Mobile Back Button (Hidden by default) -->
-            <button id="closeSearchBtn" aria-label="Close search" class="icon-btn hidden p-2 text-slate-500 mr-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors duration-300">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-            </button>
+            <!-- Left Section: Menu & Logo -->
+            <div id="logoContainer" class="flex items-center gap-3 transition-[transform,opacity] duration-300">
+                <button id="menuBtn" aria-label="Open sidebar"
+                    class="icon-btn md:hidden p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+                <a href="/" class="flex items-center">
+                    <span
+                        class="text-xl font-extrabold text-primary-600 dark:text-primary-400 tracking-tight">EduCrate</span>
+                </a>
+            </div>
 
-            <div class="relative w-full max-w-md">
-                <!-- Actual Search Input -->
-                <div id="searchBarContainer" class="hidden md:block relative w-full search-shell">
-                    <svg class="search-leading-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m1.35-5.65a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    <input type="text" id="searchInput" aria-label="Search notes" aria-autocomplete="list" aria-expanded="false" aria-controls="searchResults" placeholder="Search notes..." class="w-full pl-4 pr-10 py-2 bg-slate-100 dark:bg-slate-800 border-transparent rounded-xl text-sm focus:ring-2 focus:ring-primary-500 dark:text-white outline-none transition-all">
-                    <kbd class="search-shortcut" aria-hidden="true">/</kbd>
-                    <div id="searchResults" role="listbox" aria-label="Search results" class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl hidden z-[100] border border-slate-200 dark:border-slate-700 max-h-[70vh] overflow-y-auto"></div>
+            <!-- Center Section: Search Bar -->
+            <div id="searchWrapper"
+                class="flex-1 flex justify-end md:justify-center items-center px-2 transition-[transform,opacity] duration-300">
+                <!-- Mobile Back Button (Hidden by default) -->
+                <button id="closeSearchBtn" aria-label="Close search"
+                    class="icon-btn hidden p-2 text-slate-500 mr-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+
+                <div class="relative w-full max-w-md">
+                    <!-- Actual Search Input -->
+                    <div id="searchBarContainer" class="hidden md:block relative w-full search-shell">
+                        <svg class="search-leading-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-4.35-4.35m1.35-5.65a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input type="text" id="searchInput" aria-label="Search notes" aria-autocomplete="list"
+                            aria-expanded="false" aria-controls="searchResults" placeholder="Search notes..."
+                            class="w-full pl-4 pr-10 py-2 bg-slate-100 dark:bg-slate-800 border-transparent rounded-xl text-sm focus:ring-2 focus:ring-primary-500 dark:text-white outline-none transition-all">
+                        <kbd class="search-shortcut" aria-hidden="true">/</kbd>
+                        <div id="searchResults" role="listbox" aria-label="Search results"
+                            class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl hidden z-[100] border border-slate-200 dark:border-slate-700 max-h-[70vh] overflow-y-auto">
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Right Section: Theme Toggle -->
-        <div id="rightNav" class="flex items-center gap-1 transition-[transform,opacity] duration-300">
-            <!-- Mobile Search Trigger Icon -->
-            <button id="mobileSearchTrigger" aria-label="Open search" class="icon-btn md:hidden p-2.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors duration-300">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            </button>
-            <button id="themeToggle" aria-label="Toggle theme" class="icon-btn p-2.5 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors duration-300">
-                <svg id="sunIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                <svg id="moonIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
-            </button>
+            <!-- Right Section: Theme Toggle -->
+            <div id="rightNav" class="flex items-center gap-1 transition-[transform,opacity] duration-300">
+                <!-- Mobile Search Trigger Icon -->
+                <button id="mobileSearchTrigger" aria-label="Open search"
+                    class="icon-btn md:hidden p-2.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </button>
+                <button id="themeToggle" aria-label="Toggle theme"
+                    class="icon-btn p-2.5 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors duration-300">
+                    <svg id="sunIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <svg id="moonIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                </button>
+            </div>
         </div>
-    </div>
-</nav>
-    
+    </nav>
+
     <!-- Sidebar -->
     <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-30 hidden"></div>
-    <aside id="sidebar" class="fixed left-0 top-16 bottom-0 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-30 -translate-x-full md:translate-x-0 transition-transform duration-300">
+    <aside id="sidebar"
+        class="fixed left-0 top-16 bottom-0 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-30 -translate-x-full md:translate-x-0 transition-transform duration-300">
         <div class="sidebar-shell flex flex-col h-full">
             <div class="sidebar-heading">
                 <h2>
                     <span class="sidebar-kicker">Library</span>
                     <span class="sidebar-title">Subjects</span>
                 </h2>
-                <button id="sidebarCloseBtn" aria-label="Close sidebar" class="icon-btn md:hidden text-slate-600 dark:text-slate-300">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                <button id="sidebarCloseBtn" aria-label="Close sidebar"
+                    class="icon-btn md:hidden text-slate-600 dark:text-slate-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                 </button>
             </div>
             <div id="foldersList" class="space-y-1 flex-1 overflow-y-auto">
-                <div class="p-2 space-y-3"><div class="h-9 shimmer rounded-lg"></div><div class="h-9 shimmer rounded-lg"></div></div>
+                <div class="p-2 space-y-3">
+                    <div class="h-9 shimmer rounded-lg"></div>
+                    <div class="h-9 shimmer rounded-lg"></div>
+                </div>
             </div>
-            <a href="https://model.ktunotes.live/s4/cs" target="_blank" rel="noopener noreferrer" class="sidebar-cta neon-cta mt-2 inline-flex w-full items-center justify-center gap-2 px-3 py-3 bg-red-600 text-white rounded-xl text-sm font-bold whitespace-nowrap hover:bg-red-700 hover:scale-105 transition-all shadow-lg shadow-red-500/30 active:scale-95">
+            <a href="https://model.ktunotes.live/s4/cs" target="_blank" rel="noopener noreferrer"
+                class="sidebar-cta neon-cta mt-2 inline-flex w-full items-center justify-center gap-2 px-3 py-3 bg-red-600 text-white rounded-xl text-sm font-bold whitespace-nowrap hover:bg-red-700 hover:scale-105 transition-all shadow-lg shadow-red-500/30 active:scale-95">
                 Get Model Question Papers
             </a>
             <div class="sidebar-credit pt-4 border-t border-slate-100 dark:border-slate-800">
-                <p class="text-[10px] text-slate-400 text-center mb-1">CRAFTED BY MABEL</p>
-                <a href="https://github.com/MabelMoncy" target="_blank" rel="noopener noreferrer" class="block text-xs font-bold text-primary-600 dark:text-primary-400 text-center hover:underline cursor-pointer">
+                <p class="text-[10px] text-slate-400 text-center mb-1">CRAFTED BY MABEL ANTO MONCY</p>
+                <a href="https://github.com/MabelMoncy" target="_blank" rel="noopener noreferrer"
+                    class="block text-xs font-bold text-primary-600 dark:text-primary-400 text-center hover:underline cursor-pointer">
                     Mabel Anto Moncy
                 </a>
             </div>
         </div>
     </aside>
-    
+
     <!-- Main Content -->
     <main class="md:ml-64 pt-16 min-h-screen">
         <div id="contentHeader" class="hidden p-6 md:p-8 bg-transparent">
-            <div id="breadcrumbTrail" class="breadcrumb-trail flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3 text-xs sm:text-sm font-semibold tracking-wide text-slate-500 dark:text-slate-300"></div>
+            <div id="breadcrumbTrail"
+                class="breadcrumb-trail flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3 text-xs sm:text-sm font-semibold tracking-wide text-slate-500 dark:text-slate-300">
+            </div>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <h1 id="contentTitle" class="text-2xl font-black dark:text-white tracking-tight leading-tight whitespace-nowrap overflow-hidden text-ellipsis sm:flex-1 sm:min-w-0">EduCrate | Notes Hub</h1>
-                <div id="sortContainer" class="hidden w-full sm:w-auto flex items-center justify-between sm:justify-end gap-2 sm:shrink-0">
-                    <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Sort Files</span>
+                <h1 id="contentTitle"
+                    class="text-2xl font-black dark:text-white tracking-tight leading-tight whitespace-nowrap overflow-hidden text-ellipsis sm:flex-1 sm:min-w-0">
+                    EduCrate | Notes Hub</h1>
+                <div id="sortContainer"
+                    class="hidden w-full sm:w-auto flex items-center justify-between sm:justify-end gap-2 sm:shrink-0">
+                    <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Sort
+                        Files</span>
                     <select id="sortSelect" class="transition-all">
                         <option value="newToOld">New to old</option>
                         <option value="oldToNew">Old to new</option>
@@ -1354,49 +1547,68 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="p-6 md:p-8 main-content-shell">
             <div id="welcomeState" class="flex flex-col items-center justify-center py-24 text-center">
                 <div class="w-20 h-20 rounded-[2rem] flex items-center justify-center mb-8 overflow-hidden">
-                    <img src="/logo.png" alt="EduCrate" width="80" height="80" class="w-full h-full object-cover" loading="lazy" decoding="async">
+                    <img src="/logo.png" alt="EduCrate" width="80" height="80" class="w-full h-full object-cover"
+                        loading="lazy" decoding="async">
                 </div>
                 <h2 class="text-3xl font-extrabold dark:text-white mb-3">Welcome to EduCrate</h2>
-                <p class="text-slate-500 max-w-sm mx-auto leading-relaxed mb-6">Your dedicated digital library for students.</p>
+                <p class="text-slate-500 max-w-sm mx-auto leading-relaxed mb-6">Your dedicated digital library for
+                    students.</p>
                 <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-                    <button id="browseSubjectsBtn" class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 hover:scale-105 transition-all shadow-lg shadow-primary-500/30 active:scale-95">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                    <button id="browseSubjectsBtn"
+                        class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 hover:scale-105 transition-all shadow-lg shadow-primary-500/30 active:scale-95">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                        </svg>
                         Browse Subjects
                     </button>
-                    <a href="https://model.ktunotes.live/s4/cs" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 hover:scale-105 transition-all shadow-lg shadow-red-500/30 active:scale-95">
+                    <a href="https://model.ktunotes.live/s4/cs" target="_blank" rel="noopener noreferrer"
+                        class="inline-flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 hover:scale-105 transition-all shadow-lg shadow-red-500/30 active:scale-95">
                         Get Model Question Papers
                     </a>
                 </div>
             </div>
-            
+
             <div id="filesGrid" class="notes-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
-            <div id="emptyState" class="hidden text-center py-20 text-slate-400 font-medium">No notes uploaded to this section yet.</div>
+            <div id="emptyState" class="hidden text-center py-20 text-slate-400 font-medium">No notes uploaded to this
+                section yet.</div>
         </div>
     </main>
-    
+
     <!-- PDF VIEWER MODAL - Mobile Optimized with Google Drive Preview -->
     <div id="pdfModal" class="fixed inset-0 z-[100] hidden flex flex-col">
         <div class="absolute inset-0 bg-slate-950/95 backdrop-blur-sm" id="modalBackdrop"></div>
         <div class="relative flex flex-col h-full w-full overflow-hidden">
             <!-- Modal Header -->
-            <div class="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 z-50">
+            <div
+                class="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 z-50">
                 <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                     <div class="bg-red-500 p-1 sm:p-1.5 rounded shadow-lg shadow-red-500/20 flex-shrink-0">
-                        <svg class="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
+                        <svg class="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+                        </svg>
                     </div>
                     <h3 id="pdfTitle" class="font-bold dark:text-white truncate text-xs sm:text-sm">Document.pdf</h3>
                 </div>
                 <div class="flex items-center gap-1 sm:gap-2">
-                    <a id="pdfDownload" href="#" class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-primary-600 text-white rounded-lg sm:rounded-xl text-xs font-bold hover:bg-primary-700 transition-all">
-                        <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <a id="pdfDownload" href="#"
+                        class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-primary-600 text-white rounded-lg sm:rounded-xl text-xs font-bold hover:bg-primary-700 transition-all">
+                        <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
                         <span>DOWNLOAD</span>
                     </a>
-                    <button id="closePdfBtn" aria-label="Close PDF viewer" class="p-1.5 sm:p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg sm:rounded-xl transition-colors">
-                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <button id="closePdfBtn" aria-label="Close PDF viewer"
+                        class="p-1.5 sm:p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg sm:rounded-xl transition-colors">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -1405,7 +1617,9 @@
             <div id="pdfContainer" class="flex-1 overflow-hidden bg-slate-200 dark:bg-slate-950">
                 <!-- Loading State -->
                 <div id="pdfLoading" class="flex flex-col items-center justify-center h-full">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 border-[3px] border-primary-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <div
+                        class="w-10 h-10 sm:w-12 sm:h-12 border-[3px] border-primary-500 border-t-transparent rounded-full animate-spin mb-4">
+                    </div>
                     <p class="text-slate-400 text-xs font-bold tracking-widest uppercase">Loading PDF...</p>
                 </div>
                 <!-- Google Drive Preview Iframe -->
@@ -1415,11 +1629,16 @@
     </div>
 
     <!-- Pull-to-refresh indicator -->
-    <div id="pullRefreshIndicator" class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 rounded-full shadow-lg border border-slate-200 dark:border-slate-700">
-        <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+    <div id="pullRefreshIndicator"
+        class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 rounded-full shadow-lg border border-slate-200 dark:border-slate-700">
+        <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
         <span id="pullRefreshText" class="text-xs font-bold text-slate-500 dark:text-slate-400">Pull to refresh</span>
     </div>
 
     <script src="script.js" defer></script>
 </body>
+
 </html>

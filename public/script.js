@@ -657,9 +657,6 @@ async function selectFolder(id, name, options = {}) {
     if (!options.skipUrlSync) {
         replaceUrlState(id, null);
     }
-    
-    // Start polling files for this folder
-    startFilePolling();
 
     if (isMobile) {
         closeSidebar();
@@ -672,6 +669,8 @@ async function selectFolder(id, name, options = {}) {
         elements.contentTitle.textContent = cache.folderName || name;
         renderFolderContents(cache.folders, sortFilesByModified(cache.files));
         renderBreadcrumbs(cache.breadcrumbs);
+        // Start polling after initial render is done
+        startFilePolling();
         return;
     }
 
@@ -689,6 +688,8 @@ async function selectFolder(id, name, options = {}) {
                     elements.emptyState.classList.remove('hidden');
                 }
             }
+            // Start polling after initial render is done
+            startFilePolling();
         } else {
             if (id === currentFolderId) {
                 elements.filesGrid.innerHTML = '';
@@ -862,7 +863,9 @@ function renderFolderContents(folders, files) {
     let cursor = 0;
 
     if (files.length === 0) {
+        elements.filesGrid.removeEventListener('click', handleFileClick);
         elements.filesGrid.innerHTML = folderHtml;
+        elements.filesGrid.addEventListener('click', handleFileClick, { passive: true });
         return;
     }
 
