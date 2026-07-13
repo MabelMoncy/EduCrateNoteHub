@@ -19,7 +19,7 @@
     "dotenv": "^17.4.2",
     "express": "^4.22.1",
     "googleapis": "^173.0.0",
-    "helmet": "^7.2.0",
+    "helmet": "^8.3.0",
     "serverless-http": "^4.0.0"
   }
 }
