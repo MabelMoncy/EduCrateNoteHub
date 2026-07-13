@@ -9,7 +9,7 @@
     "start": "node server.js"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.20",
+    "autoprefixer": "^10.5.2",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17"
   },
