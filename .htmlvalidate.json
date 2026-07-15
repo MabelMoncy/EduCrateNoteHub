@@ -1,0 +1,8 @@
+{
+  "extends": ["html-validate:recommended"],
+  "rules": {
+    "no-implicit-button-type": "off",
+    "prefer-native-element": "off",
+    "element-required-attributes": ["error", { "iframe": ["src"] }] 
+  }
+}

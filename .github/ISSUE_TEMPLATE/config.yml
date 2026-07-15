@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Have a question?
+    url: https://github.com/MabelMoncy/EduCrateNoteHub/discussions/new?category=q-a
+    about: Ask a question in our discussions forum
+  - name: Request a Feature
+    url: https://github.com/MabelMoncy/EduCrateNoteHub/discussions/new?category=ideas
+    about: Share your ideas for new features in discussions

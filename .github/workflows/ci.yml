@@ -45,6 +45,12 @@ jobs:
       - name: Run npm audit (high+)
         run: npm audit --audit-level=high
 
+      - name: Run HTML Validation
+        run: npx -y html-validate public/index.html
+
+      - name: Verify CSS Build
+        run: npm run build:css
+
       - name: Upload CI logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
