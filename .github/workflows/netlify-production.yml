@@ -87,7 +87,7 @@ jobs:
 
       - name: Upload production deploy artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: netlify-production-logs-${{ github.run_id }}
           retention-days: 14
