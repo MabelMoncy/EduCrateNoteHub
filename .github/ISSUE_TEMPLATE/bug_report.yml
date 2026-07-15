@@ -1,0 +1,82 @@
+name: Bug Report
+description: Report a problem or unexpected behavior in EduCrate
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! Please provide as much detail as possible to help us fix it.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Provide a clear and concise description of the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this bug?
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll to '...'
+        4. Observe the error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: Describe what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: Describe what actually happened.
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: device
+    attributes:
+      label: Device Type
+      options:
+        - Desktop
+        - Tablet
+        - Mobile
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / Logs
+      description: Attach screenshots or paste error logs if available. You can drag and drop images here.
+    validations:
+      required: false
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Critical (Blocks usage completely)
+        - Major (Significant feature is broken)
+        - Minor (Annoyance but functional)
+        - Cosmetic (Visual issue)
+    validations:
+      required: true

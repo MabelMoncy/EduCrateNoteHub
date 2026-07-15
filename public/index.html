@@ -20,7 +20,63 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon_io/favicon-16x16.png">
     <link rel="icon" href="/favicon_io/favicon.ico" sizes="any">
     <link rel="manifest" href="/favicon_io/site.webmanifest">
-    <meta name="theme-color" content="#ffffff">
+    <!-- Theme Colors -->
+    <meta name="theme-color" content="#f6f8ff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#07091f" media="(prefers-color-scheme: dark)">
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="EduCrate is a modern digital library for S4 Computer Science & Engineering students to store, organize, and access course materials and notes.">
+    <meta name="keywords" content="EduCrate, computer science notes, engineering study materials, CS2 notes, digital library, student resources">
+    <meta name="author" content="Mabel Anto Moncy">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://educratenoteshub.vercel.app/">
+
+    <!-- Open Graph / Facebook / WhatsApp / Instagram -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://educratenoteshub.vercel.app/">
+    <meta property="og:title" content="EduCrate | S4 CS2 Notes">
+    <meta property="og:description" content="Your Digital Library for Computer Science Notes. Access course materials and study resources easily.">
+    <meta property="og:image" content="https://educratenoteshub.vercel.app/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="EduCrate Preview Image">
+    <meta property="og:site_name" content="EduCrate">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://educratenoteshub.vercel.app/">
+    <meta name="twitter:title" content="EduCrate | S4 CS2 Notes">
+    <meta name="twitter:description" content="Your Digital Library for Computer Science Notes. Access course materials and study resources easily.">
+    <meta name="twitter:image" content="https://educratenoteshub.vercel.app/og-image.png">
+    <meta name="twitter:image:alt" content="EduCrate Preview Image">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://educratenoteshub.vercel.app/#website",
+          "url": "https://educratenoteshub.vercel.app/",
+          "name": "EduCrate",
+          "description": "A Modern Digital Library for S4 Computer Science & Engineering Students.",
+          "inLanguage": "en-US"
+        },
+        {
+          "@type": "EducationalOrganization",
+          "@id": "https://educratenoteshub.vercel.app/#organization",
+          "name": "EduCrate Note Hub",
+          "url": "https://educratenoteshub.vercel.app/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://educratenoteshub.vercel.app/logo.png"
+          }
+        }
+      ]
+    }
+    </script>
     <link id="lcpImagePreload" rel="preload" as="image" href="/logo.png">
     <link rel="stylesheet" href="/styles.css">
     <style>
@@ -1623,7 +1679,7 @@
                     <p class="text-slate-400 text-xs font-bold tracking-widest uppercase">Loading PDF...</p>
                 </div>
                 <!-- Google Drive Preview Iframe -->
-                <iframe id="pdfIframe" class="hidden w-full h-full" allowfullscreen></iframe>
+                <iframe id="pdfIframe" title="PDF Document Viewer" class="hidden w-full h-full" allowfullscreen></iframe>
             </div>
         </div>
     </div>

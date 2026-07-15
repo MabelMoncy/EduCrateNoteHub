@@ -1,0 +1,58 @@
+name: Feature Request
+description: Suggest a new feature or improvement for EduCrate
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement to EduCrate! Please detail your idea below.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Description
+      description: Describe the problem clearly. Is your feature request related to a problem? Ex. I'm always frustrated when [...]
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Explain your solution. A clear and concise description of what you want to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Mention any alternatives or workarounds you've considered.
+    validations:
+      required: false
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      options:
+        - UI/UX
+        - Performance
+        - New Feature
+        - Integration
+        - Accessibility
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - Low (Nice to have)
+        - Medium (Valuable addition)
+        - High (Important missing feature)
+    validations:
+      required: true
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Willing to contribute?
+      options:
+        - label: Yes, I would like to help implement this feature.

@@ -1,0 +1,30 @@
+"ui/css":
+  - any:
+    - "public/styles.css"
+    - "src/styles.css"
+    - "tailwind.config.js"
+    - "postcss.config.js"
+
+"javascript":
+  - any:
+    - "public/**/*.js"
+
+"ci/cd":
+  - any:
+    - ".github/**"
+    - "netlify.toml"
+    - "vercel.json"
+
+"html":
+  - any:
+    - "public/**/*.html"
+
+"backend":
+  - any:
+    - "netlify/functions/**"
+    - "server.js"
+
+"documentation":
+  - any:
+    - "*.md"
+    - "docs/**"

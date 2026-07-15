@@ -4,3 +4,17 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "ci/cd"
+      - "dependencies"
+    commit-message:
+      prefix: "ci(deps)"
