@@ -340,7 +340,7 @@ async function listPdfFilesAcrossParents(driveClient, parentIds) {
         const parentQuery = parentChunk.map((id) => `'${id}' in parents`).join(' or ');
         const files = await listDriveFilesPaginated(driveClient, {
             q: `(${parentQuery}) and ${PDF_OR_SHORTCUT_QUERY} and trashed = false`,
-            fields: 'nextPageToken, files(id, name, size, modifiedTime, mimeType, shortcutDetails(targetId,targetMimeType))',
+            fields: 'nextPageToken, files(id, name, size, modifiedTime, mimeType, parents, shortcutDetails(targetId,targetMimeType))',
             orderBy: 'name'
         });
         allFiles.push(...files);
@@ -480,6 +480,85 @@ let cachedTree = null;
 let lastTreeFetchTime = 0;
 const TREE_CACHE_TTL = 120000; // 2 minutes
 
+let cachedSearchIndex = null;
+let lastIndexBuildTime = 0;
+let indexBuildPromise = null;
+const INDEX_CACHE_TTL = 120000; // 2 minutes
+
+function getFlatFolders(node, path = []) {
+    const currentPath = [...path, node.name];
+    let folders = [{ id: node.id, name: node.name, path: currentPath }];
+    if (node.children) {
+        for (const child of node.children) {
+            folders = folders.concat(getFlatFolders(child, currentPath));
+        }
+    }
+    return folders;
+}
+
+async function buildSearchIndex(driveClient, rootNode) {
+    if (!rootNode) return [];
+
+    const flatFolders = getFlatFolders(rootNode);
+    const folderMap = new Map();
+    const folderIds = [];
+
+    for (const folder of flatFolders) {
+        folderMap.set(folder.id, {
+            name: folder.name,
+            breadcrumbLabel: folder.path.slice(1).join(' › ') // Omit root "Notes" name
+        });
+        folderIds.push(folder.id);
+    }
+
+    const pdfFiles = await listPdfFilesAcrossParents(driveClient, folderIds);
+
+    const index = [];
+    for (const file of pdfFiles) {
+        const mapped = mapDriveFileToApiFile(file);
+        if (mapped) {
+            const parentId = (file.parents && file.parents.length > 0) ? file.parents[0] : null;
+            const parentInfo = parentId ? folderMap.get(parentId) : null;
+
+            mapped.folderId = parentId;
+            mapped.folderName = parentInfo ? parentInfo.name : '';
+            mapped.breadcrumbLabel = parentInfo ? parentInfo.breadcrumbLabel : '';
+
+            index.push(mapped);
+        }
+    }
+
+    return index;
+}
+
+async function getOrBuildIndex(driveClient) {
+    const now = Date.now();
+
+    if (!cachedTree || (now - lastTreeFetchTime > TREE_CACHE_TTL)) {
+        cachedTree = await buildFolderTree(driveClient);
+        lastTreeFetchTime = now;
+    }
+
+    if (cachedSearchIndex && (now - lastIndexBuildTime < INDEX_CACHE_TTL)) {
+        return cachedSearchIndex;
+    }
+
+    if (!indexBuildPromise) {
+        indexBuildPromise = (async () => {
+            try {
+                const index = await buildSearchIndex(driveClient, cachedTree);
+                cachedSearchIndex = index;
+                lastIndexBuildTime = Date.now();
+                return index;
+            } finally {
+                indexBuildPromise = null;
+            }
+        })();
+    }
+
+    return indexBuildPromise;
+}
+
 async function buildFolderTree(driveClient) {
     const rootNode = { id: ROOT_FOLDER_ID, name: 'Notes', children: [] };
     const nodeMap = new Map();
@@ -539,13 +618,21 @@ app.get('/api/tree', async (req, res) => {
         }
         
         const now = Date.now();
-        if (!cachedTree || (now - lastTreeFetchTime > TREE_CACHE_TTL)) {
+        const treeNeedsRebuild = !cachedTree || (now - lastTreeFetchTime > TREE_CACHE_TTL);
+        if (treeNeedsRebuild) {
             cachedTree = await buildFolderTree(driveClient);
             lastTreeFetchTime = now;
         }
         
         res.setHeader('Cache-Control', 'public, max-age=120');
         res.json({ success: true, data: cachedTree });
+
+        // Asynchronously warm index after sending response if needed
+        if (treeNeedsRebuild || !cachedSearchIndex || (now - lastIndexBuildTime > INDEX_CACHE_TTL)) {
+            getOrBuildIndex(driveClient).catch((err) => {
+                console.error('Background index warming failed:', err.message);
+            });
+        }
     } catch (error) {
         console.error('Get tree error:', error.message);
         res.status(500).json({ success: false, error: 'Failed to retrieve tree' });
@@ -659,22 +746,18 @@ app.get('/api/search', async (req, res) => {
             return;
         }
 
-        const response = await driveClient.files.list({
-            q: `name contains '${sanitizedQuery}' and ${PDF_OR_SHORTCUT_QUERY} and trashed = false`,
-            fields: 'files(id, name, size, modifiedTime, mimeType, shortcutDetails(targetId,targetMimeType))',
-            pageSize: 20,
-            corpora: 'allDrives',
-            supportsAllDrives: true,
-            includeItemsFromAllDrives: true
-        });
+        const index = await getOrBuildIndex(driveClient);
+        const lowerQuery = sanitizedQuery.toLowerCase();
 
-        const files = (response.data.files || [])
-            .map(mapDriveFileToApiFile)
-            .filter(Boolean)
-            .sort(naturalSort);
+        const matched = index.filter(file => 
+            file.name.toLowerCase().includes(lowerQuery)
+        );
 
-        res.setHeader('Cache-Control', 'public, max-age=900');
-        res.json({ success: true, data: files });
+        // Limit results to top 25 matches
+        const results = matched.slice(0, 25);
+
+        res.setHeader('Cache-Control', 'no-store');
+        res.json({ success: true, data: results });
     } catch (error) {
         console.error('Search API error:', error.message);
         res.status(500).json({ success: false, error: 'Search failed' });

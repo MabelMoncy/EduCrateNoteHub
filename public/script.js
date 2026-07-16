@@ -1126,7 +1126,7 @@ function renderSearchResults(results) {
             '<span class="search-result-icon" aria-hidden="true"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg></span>' +
             '<span class="search-result-text">' +
                 '<span class="search-result-name">' + displayName + '</span>' +
-                '<span class="search-result-label">PDF note</span>' +
+                '<span class="search-result-label">' + escapeHtml(f.breadcrumbLabel || f.folderName || 'PDF note') + '</span>' +
             '</span>' +
         '</div>';
     }).join('');
@@ -1156,7 +1156,16 @@ function handleSearchKeydown(e) {
         e.preventDefault();
         const targetIndex = activeSearchIndex >= 0 ? activeSearchIndex : 0;
         const target = results[targetIndex];
-        if (target) openPdf(JSON.parse(target.dataset.file));
+        if (target) {
+            const file = JSON.parse(target.dataset.file);
+            const openWithFolder = async () => {
+                if (file.folderId && file.folderId !== currentFolderId) {
+                    await selectFolder(file.folderId, file.folderName || 'Loading...', { skipUrlSync: true });
+                }
+                openPdf(file);
+            };
+            openWithFolder().catch(console.error);
+        }
     } else if (e.key === 'Escape') {
         activeSearchIndex = -1;
         elements.searchInput.removeAttribute('aria-activedescendant');
@@ -1182,5 +1191,14 @@ function setActiveSearchResult(index) {
 
 function handleSearchResultClick(e) {
     const result = e.target.closest('.search-result');
-    if (result) openPdf(JSON.parse(result.dataset.file));
+    if (result) {
+        const file = JSON.parse(result.dataset.file);
+        const openWithFolder = async () => {
+            if (file.folderId && file.folderId !== currentFolderId) {
+                await selectFolder(file.folderId, file.folderName || 'Loading...', { skipUrlSync: true });
+            }
+            openPdf(file);
+        };
+        openWithFolder().catch(console.error);
+    }
 }
