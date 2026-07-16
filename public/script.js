@@ -130,6 +130,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupEventListeners();
     await loadFolderTree();
     await hydrateFromUrl();
+    
+    // Back to top button
+    const backToTopBtn = document.getElementById('backToTopBtn');
+    if (backToTopBtn) {
+        window.addEventListener('scroll', () => {
+            backToTopBtn.classList.toggle('visible', window.scrollY > 400);
+        }, { passive: true });
+        backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+
+    // PDF retry button
+    const pdfRetryBtn = document.getElementById('pdfRetryBtn');
+    if (pdfRetryBtn) {
+        pdfRetryBtn.addEventListener('click', () => {
+            const fileId = elements.pdfDownload.dataset.fileId;
+            if (fileId && window.currentPdfFile) {
+                openPdf(window.currentPdfFile, { skipHistoryPush: true });
+            }
+        });
+    }
 });
 
 function setupEventListeners() {
@@ -547,71 +569,103 @@ function getSubjectIconSvg(name = '') {
     return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke-width="2" stroke-linecap="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" stroke-width="2" stroke-linejoin="round"/></svg>';
 }
 
-function renderFolderTree(tree) {
-    if (!tree || !tree.children) return;
-    
-    const expandedIds = new Set();
-    document.querySelectorAll('.tree-item.is-expanded > .tree-toggle').forEach(el => {
-        expandedIds.add(el.dataset.folderId);
-    });
-
-    function isParentOfCurrent(node) {
-        if (node.id === currentFolderId) return true;
-        if (node.children) {
-            return node.children.some(isParentOfCurrent);
+function findNodeInTree(tree, id) {
+    if (!tree) return null;
+    if (tree.id === id) return tree;
+    if (tree.children) {
+        for (const child of tree.children) {
+            const found = findNodeInTree(child, id);
+            if (found) return found;
         }
-        return false;
     }
+    return null;
+}
 
-    function buildTreeHtml(node, level = 0) {
-        if (!node.children || node.children.length === 0) {
-            return '<li class="tree-item">' +
-                    '<button class="tree-toggle tree-leaf ' + (node.id === currentFolderId ? 'is-active' : '') + '" data-folder-id="' + escapeHtml(node.id) + '" data-folder-name="' + escapeHtml(node.name) + '" style="padding-left: ' + (level * 0.75 + 0.5) + 'rem">' +
-                        '<span class="tree-icon">' + getSubjectIconSvg(node.name) + '</span>' +
-                        '<span class="tree-label">' + escapeHtml(node.name) + '</span>' +
-                    '</button>' +
-                '</li>';
-        }
+function buildTreeHtml(node, level = 0, isInitial = false) {
+    const count = cachedFiles[node.id] ? cachedFiles[node.id].files.length : null;
+    const countBadge = count !== null ? '<span class="tree-count-badge">' + count + '</span>' : '';
 
-        const isExpanded = expandedIds.has(node.id) || isParentOfCurrent(node);
-        const childrenHtml = node.children.map(child => buildTreeHtml(child, level + 1)).join('');
-        
-        return '<li class="tree-item ' + (isExpanded ? 'is-expanded' : '') + '">' +
-                '<button class="tree-toggle ' + (node.id === currentFolderId ? 'is-active' : '') + '" data-folder-id="' + escapeHtml(node.id) + '" data-folder-name="' + escapeHtml(node.name) + '" style="padding-left: ' + (level * 0.75 + 0.5) + 'rem">' +
-                    '<span class="tree-chevron flex items-center justify-center">' +
-                        '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>' +
-                    '</span>' +
+    if (!node.children || node.children.length === 0) {
+        return '<li class="tree-item">' +
+                '<button class="tree-toggle tree-leaf ' + (node.id === currentFolderId ? 'is-active' : '') + '" data-folder-id="' + escapeHtml(node.id) + '" data-folder-name="' + escapeHtml(node.name) + '" style="padding-left: ' + (level * 0.75 + 0.5) + 'rem">' +
                     '<span class="tree-icon">' + getSubjectIconSvg(node.name) + '</span>' +
                     '<span class="tree-label">' + escapeHtml(node.name) + '</span>' +
+                    countBadge +
                 '</button>' +
-                '<ul class="tree-children ' + (isExpanded ? '' : 'hidden') + '">' +
-                    childrenHtml +
-                '</ul>' +
             '</li>';
     }
 
-    const html = '<ul class="tree-list">' + tree.children.map(child => buildTreeHtml(child, 0)).join('') + '</ul>';
+    function isParentOfCurrent(n) {
+        if (n.id === currentFolderId) return true;
+        if (n.children) return n.children.some(isParentOfCurrent);
+        return false;
+    }
+    
+    const isExpanded = isInitial ? (level === 0 || isParentOfCurrent(node)) : false;
+    const childrenHtml = isExpanded ? node.children.map(child => buildTreeHtml(child, level + 1, isInitial)).join('') : '';
+    
+    return '<li class="tree-item ' + (isExpanded ? 'is-expanded' : '') + '">' +
+            '<button class="tree-toggle ' + (node.id === currentFolderId ? 'is-active' : '') + '" data-folder-id="' + escapeHtml(node.id) + '" data-folder-name="' + escapeHtml(node.name) + '" style="padding-left: ' + (level * 0.75 + 0.5) + 'rem">' +
+                '<span class="tree-chevron flex items-center justify-center">' +
+                    '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>' +
+                '</span>' +
+                '<span class="tree-icon">' + getSubjectIconSvg(node.name) + '</span>' +
+                '<span class="tree-label">' + escapeHtml(node.name) + '</span>' +
+                countBadge +
+            '</button>' +
+            '<ul class="tree-children ' + (isExpanded ? '' : 'hidden') + '" data-level="' + (level + 1) + '" data-rendered="' + (isExpanded ? 'true' : 'false') + '">' +
+                childrenHtml +
+            '</ul>' +
+        '</li>';
+}
+
+function renderFolderTree(tree) {
+    if (!tree || !tree.children) return;
+    const html = '<ul class="tree-list">' + tree.children.map(child => buildTreeHtml(child, 0, true)).join('') + '</ul>';
     
     requestAnimationFrame(() => {
         elements.foldersList.removeEventListener('click', handleTreeClick);
         elements.foldersList.innerHTML = html;
         elements.foldersList.addEventListener('click', handleTreeClick, { passive: true });
-        expandedIds.add('initial');
     });
 }
 
 function updateActiveFolderButton() {
     const buttons = elements.foldersList.querySelectorAll('.tree-toggle');
     buttons.forEach(btn => {
-        const isActive = btn.dataset.folderId === currentFolderId;
+        const folderId = btn.dataset.folderId;
+        const isActive = folderId === currentFolderId;
         btn.classList.toggle('is-active', isActive);
         btn.setAttribute('aria-current', isActive ? 'page' : 'false');
         
+        // Update badge
+        const count = cachedFiles[folderId] ? cachedFiles[folderId].files.length : null;
+        if (count !== null) {
+            let badge = btn.querySelector('.tree-count-badge');
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'tree-count-badge';
+                btn.appendChild(badge);
+            }
+            badge.textContent = count;
+        }
+
         if (isActive) {
             let parentItem = btn.closest('.tree-children')?.closest('.tree-item');
             while (parentItem) {
                 parentItem.classList.add('is-expanded');
-                parentItem.querySelector('.tree-children').classList.remove('hidden');
+                
+                const childrenList = parentItem.querySelector('.tree-children');
+                if (childrenList.dataset.rendered === 'false') {
+                    const node = findNodeInTree(cachedTree, parentItem.querySelector('.tree-toggle').dataset.folderId);
+                    const level = parseInt(childrenList.dataset.level || '1', 10);
+                    if (node && node.children) {
+                        childrenList.innerHTML = node.children.map(child => buildTreeHtml(child, level, false)).join('');
+                    }
+                    childrenList.dataset.rendered = 'true';
+                }
+                
+                childrenList.classList.remove('hidden');
                 parentItem = parentItem.parentElement.closest('.tree-item');
             }
         }
@@ -632,6 +686,14 @@ function handleTreeClick(e) {
             treeItem.classList.remove('is-expanded');
             childrenList.classList.add('hidden');
         } else {
+            if (childrenList.dataset.rendered === 'false') {
+                const node = findNodeInTree(cachedTree, toggleBtn.dataset.folderId);
+                const level = parseInt(childrenList.dataset.level || '1', 10);
+                if (node && node.children) {
+                    childrenList.innerHTML = node.children.map(child => buildTreeHtml(child, level, false)).join('');
+                }
+                childrenList.dataset.rendered = 'true';
+            }
             treeItem.classList.add('is-expanded');
             childrenList.classList.remove('hidden');
         }
@@ -902,9 +964,23 @@ function renderFolderContents(folders, files) {
     scheduleNonBlockingTask(processChunk);
 }
 
+function getRelativeDate(isoString) {
+    if (!isoString) return null;
+    const diff = Date.now() - new Date(isoString).getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return days + 'd ago';
+    if (days < 30) return Math.floor(days / 7) + 'w ago';
+    if (days < 365) return Math.floor(days / 30) + 'mo ago';
+    return Math.floor(days / 365) + 'y ago';
+}
+
 function buildFileCardHtml(file, isLcpImage) {
     const escapedName = escapeHtml(file.name.replace('.pdf', ''));
     const escapedSize = escapeHtml(file.size);
+    const relativeDate = getRelativeDate(file.modifiedTime);
+    const dateHtml = relativeDate ? '<span class="note-size">' + relativeDate + '</span>' : '';
     const fileJson = JSON.stringify({ ...file, folderId: currentFolderId }).replace(/'/g, '&#39;');
     const imageLoadingAttrs = isLcpImage ? 'fetchpriority="high"' : 'loading="lazy"';
 
@@ -925,6 +1001,7 @@ function buildFileCardHtml(file, isLcpImage) {
                     '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 2v6h6"/></svg>' +
                     escapedSize +
                 '</span>' +
+                dateHtml +
                 '<span class="note-open">' +
                     'Open' +
                     '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>' +
@@ -963,13 +1040,18 @@ function openPdf(file, options = {}) {
     elements.pdfDownload.removeAttribute('download'); // Remove download attr, handled via JS
     
     // Reset viewer state
+    window.currentPdfFile = file;
     elements.pdfLoading.classList.remove('hidden');
     elements.pdfIframe.classList.add('hidden');
+    const pdfError = document.getElementById('pdfError');
+    if (pdfError) pdfError.classList.add('hidden');
     elements.pdfIframe.src = '';
 
     // Prefer in-app stream preview first. If it takes too long, fall back to Drive preview.
     const streamPreviewUrl = file.viewUrl || `${API_BASE}/pdf/${encodeURIComponent(file.id)}`;
     const drivePreviewUrl = `${API_BASE}/view/${encodeURIComponent(file.id)}`;
+    
+    elements.pdfIframe.onerror = () => showPdfError(file);
     elements.pdfIframe.src = streamPreviewUrl;
 
     if (pdfLoadFallbackTimer) {
@@ -977,9 +1059,18 @@ function openPdf(file, options = {}) {
     }
     pdfLoadFallbackTimer = setTimeout(() => {
         if (!elements.pdfModal.classList.contains('hidden') && elements.pdfIframe.classList.contains('hidden')) {
-            elements.pdfIframe.src = drivePreviewUrl;
+            showPdfError(file);
         }
-    }, 8000);
+    }, 15000);
+
+    function showPdfError(file) {
+        elements.pdfLoading.classList.add('hidden');
+        if (pdfError) {
+            pdfError.classList.remove('hidden');
+            const driveLink = document.getElementById('pdfOpenInDrive');
+            if (driveLink) driveLink.href = `https://drive.google.com/file/d/${file.id}/view`;
+        }
+    }
 
     const folderForUrl = currentFolderId || file.folderId || null;
     if (!options.skipHistoryPush) {

@@ -81,7 +81,7 @@
       ]
     }
     </script>
-    <link id="lcpImagePreload" rel="preload" as="image" href="/logo.png">
+    <link id="lcpImagePreload" rel="preload" as="image" href="/logo.webp">
     <link rel="stylesheet" href="/styles.css">
     <style>
         .shimmer {
@@ -319,11 +319,11 @@
 
         .neon-cta {
             animation: neonZoomPulse 1.8s ease-in-out infinite;
-            will-change: transform, opacity;
         }
 
         .neon-cta:hover {
             animation-play-state: paused;
+            will-change: transform, opacity;
         }
 
         nav,
@@ -497,6 +497,7 @@
         }
 
         .folder-btn {
+            contain: layout style;
             align-items: center;
             background: rgba(255, 255, 255, 0.4) !important;
             border: 1px solid rgba(99, 102, 241, 0.08);
@@ -714,6 +715,7 @@
         }
 
         .note-card {
+            contain: layout style paint;
             background:
                 linear-gradient(145deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.58)) !important;
             border: 1px solid rgba(99, 102, 241, 0.16) !important;
@@ -1250,9 +1252,41 @@
         }
 
         #contentHeader {
-            background: transparent !important;
-            border-bottom-color: transparent !important;
-            box-shadow: none;
+            background: rgba(246, 248, 255, 0.82) !important;
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(99, 102, 241, 0.08);
+        }
+
+        .dark #contentHeader {
+            background: rgba(7, 9, 31, 0.82) !important;
+        }
+
+        @keyframes cardFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .note-card,
+        .folder-card {
+            animation: cardFadeIn 150ms ease both;
+        }
+
+        .tree-count-badge {
+            margin-left: auto;
+            background: rgba(123, 92, 255, 0.12);
+            color: var(--acc-1);
+            border-radius: 999px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 0.1rem 0.4rem;
+            flex-shrink: 0;
         }
 
         #pdfModal .relative.flex.flex-col.h-full.w-full.overflow-hidden {
@@ -1446,6 +1480,49 @@
             }
         }
 
+        #backToTopBtn {
+            background: linear-gradient(135deg, var(--acc-1), var(--acc-2));
+            color: white;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(8px);
+            transition: opacity 200ms ease, transform 200ms ease;
+        }
+
+        #backToTopBtn.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        #backToTopBtn:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+        }
+
+        [title] {
+            position: relative;
+        }
+
+        @media (hover: hover) {
+            [title]:hover::after {
+                content: attr(title);
+                position: absolute;
+                bottom: calc(100% + 6px);
+                left: 50%;
+                transform: translateX(-50%);
+                white-space: nowrap;
+                background: rgba(15, 23, 62, 0.9);
+                color: #e8eeff;
+                font-size: 0.65rem;
+                font-weight: 700;
+                padding: 0.25rem 0.5rem;
+                border-radius: 0.5rem;
+                pointer-events: none;
+                z-index: 200;
+            }
+        }
+
         @media (prefers-reduced-motion: reduce) {
             html {
                 scroll-behavior: auto !important;
@@ -1465,8 +1542,38 @@
             .folder-btn,
             #searchInput,
             .search-result,
-            .icon-btn {
+            .icon-btn,
+            .note-card:hover,
+            .folder-btn:hover,
+            .folder-btn.is-active,
+            .search-result:hover,
+            .search-result[aria-selected="true"],
+            .note-thumb img,
+            .note-card:hover .note-thumb img,
+            .icon-btn:hover,
+            .folder-card:hover,
+            .breadcrumb-item {
                 transition: none !important;
+                transform: none !important;
+                filter: none !important;
+            }
+
+            .note-card,
+            .folder-card {
+                animation: none !important;
+            }
+        }
+
+        /* Disable expensive blur animations on low-res / low-end screens */
+        @media (max-resolution: 1.5dppx) {
+
+            body::before,
+            body::after,
+            #sidebar::before,
+            #sidebar::after {
+                animation: none !important;
+                filter: none !important;
+                opacity: 0.5;
             }
         }
     </style>
@@ -1481,7 +1588,7 @@
 
             <!-- Left Section: Menu & Logo -->
             <div id="logoContainer" class="flex items-center gap-3 transition-[transform,opacity] duration-300">
-                <button id="menuBtn" aria-label="Open sidebar"
+                <button id="menuBtn" title="Open sidebar" aria-label="Open sidebar"
                     class="icon-btn md:hidden p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1489,7 +1596,10 @@
                     </svg>
                 </button>
                 <a href="/" class="flex items-center">
-                    <img src="/logo.png" alt="EduCrate Logo" class="w-7 h-7 mr-2 rounded-lg object-cover">
+                    <picture>
+                        <source srcset="/logo.webp" type="image/webp">
+                        <img src="/logo.png" alt="EduCrate Logo" class="w-7 h-7 mr-2 rounded-lg object-cover">
+                    </picture>
                     <span
                         class="text-xl font-extrabold text-primary-600 dark:text-primary-400 tracking-tight">EduCrate</span>
                 </a>
@@ -1527,14 +1637,14 @@
             <!-- Right Section: Theme Toggle -->
             <div id="rightNav" class="flex items-center gap-1 transition-[transform,opacity] duration-300">
                 <!-- Mobile Search Trigger Icon -->
-                <button id="mobileSearchTrigger" aria-label="Open search"
+                <button id="mobileSearchTrigger" title="Search (/)" aria-label="Open search"
                     class="icon-btn md:hidden p-2.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors duration-300">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                 </button>
-                <button id="themeToggle" aria-label="Toggle theme"
+                <button id="themeToggle" title="Toggle theme (T)" aria-label="Toggle theme"
                     class="icon-btn p-2.5 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors duration-300">
                     <svg id="sunIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1589,7 +1699,7 @@
 
     <!-- Main Content -->
     <main class="md:ml-64 pt-16 min-h-screen">
-        <div id="contentHeader" class="hidden p-6 md:p-8 bg-transparent">
+        <div id="contentHeader" class="hidden p-6 md:p-8 bg-transparent sticky top-16 z-20">
             <div id="breadcrumbTrail"
                 class="breadcrumb-trail flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3 text-xs sm:text-sm font-semibold tracking-wide text-slate-500 dark:text-slate-300">
             </div>
@@ -1611,21 +1721,29 @@
 
         <div class="p-6 md:p-8 main-content-shell">
             <div id="welcomeState" class="flex items-center justify-center py-10 md:py-16">
-                <div class="w-full max-w-4xl mx-auto p-6 md:p-10 rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl dark:shadow-2xl">
+                <div
+                    class="w-full max-w-4xl mx-auto p-6 md:p-10 rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl dark:shadow-2xl">
                     <div class="text-center mb-10">
                         <h2 class="text-3xl md:text-4xl font-extrabold dark:text-white mb-4">Welcome to EduCrate</h2>
-                        <p class="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed text-sm md:text-base">
-                            EduCrate is a platform designed exclusively for the 2024 Batch CS2 students of College of Engineering Kallooppara.
+                        <p
+                            class="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed text-sm md:text-base">
+                            EduCrate is a platform designed exclusively for the 2024 Batch CS2 students of College of
+                            Engineering Kallooppara.
                         </p>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mb-10">
                         <!-- Left Column: Why EduCrate -->
                         <div class="flex flex-col">
-                            <h3 class="text-xl md:text-2xl font-bold text-primary-600 dark:text-primary-400 mb-4">Why EduCrate?</h3>
+                            <h3 class="text-xl md:text-2xl font-bold text-primary-600 dark:text-primary-400 mb-4">Why
+                                EduCrate?</h3>
                             <div class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed space-y-4 mb-8">
-                                <p>Finding study materials in multiple WhatsApp groups can be frustrating. Notes are often scattered across different chats, making them difficult to locate when you need them. On top of that, files are shared in various formats, which may not always be easy to open on every device.</p>
-                                <p>EduCrate solves these problems by bringing all your study materials together in one place.</p>
+                                <p>Finding study materials in multiple WhatsApp groups can be frustrating. Notes are
+                                    often scattered across different chats, making them difficult to locate when you
+                                    need them. On top of that, files are shared in various formats, which may not always
+                                    be easy to open on every device.</p>
+                                <p>EduCrate solves these problems by bringing all your study materials together in one
+                                    place.</p>
                             </div>
                             <div class="mt-auto flex justify-start">
                                 <button id="browseSubjectsBtn"
@@ -1642,49 +1760,85 @@
                         <!-- Right Column: Features -->
                         <div class="flex flex-col justify-center space-y-5">
                             <div class="flex items-start gap-4">
-                                <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                                <div
+                                    class="flex-shrink-0 w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                    </svg>
                                 </div>
-                                <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed pt-1 flex-1">All notes are organized in a single platform.</p>
+                                <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed pt-1 flex-1">All
+                                    notes are organized in a single platform.</p>
                             </div>
                             <div class="flex items-start gap-4">
-                                <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                <div
+                                    class="flex-shrink-0 w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
                                 </div>
-                                <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed pt-1 flex-1">Every document is standardized to PDF format for maximum compatibility.</p>
+                                <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed pt-1 flex-1">Every
+                                    document is standardized to PDF format for maximum compatibility.</p>
                             </div>
                             <div class="flex items-start gap-4">
-                                <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 flex items-center justify-center">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                <div
+                                    class="flex-shrink-0 w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
                                 </div>
-                                <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed pt-1 flex-1">PDFs can be viewed easily on both mobile phones and computers.</p>
+                                <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed pt-1 flex-1">PDFs
+                                    can be viewed easily on both mobile phones and computers.</p>
                             </div>
                             <div class="flex items-start gap-4">
-                                <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                <div
+                                    class="flex-shrink-0 w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
                                 </div>
-                                <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed pt-1 flex-1">Download your notes anytime for offline access.</p>
+                                <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed pt-1 flex-1">
+                                    Download your notes anytime for offline access.</p>
                             </div>
                             <div class="flex items-start gap-4">
-                                <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                <div
+                                    class="flex-shrink-0 w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
                                 </div>
-                                <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed pt-1 flex-1">No more searching through countless WhatsApp messages to find a single file.</p>
+                                <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed pt-1 flex-1">No
+                                    more searching through countless WhatsApp messages to find a single file.</p>
                             </div>
                         </div>
                     </div>
 
                     <div class="pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
                         <p class="text-sm md:text-base italic text-slate-500 dark:text-slate-400">
-                            With EduCrate, your study materials are always organized, accessible, and ready whenever you need them.
+                            With EduCrate, your study materials are always organized, accessible, and ready whenever you
+                            need them.
                         </p>
                     </div>
                 </div>
             </div>
 
             <div id="filesGrid" class="notes-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
-            <div id="emptyState" class="hidden text-center py-20 text-slate-400 font-medium">No notes uploaded to this
-                section yet.</div>
+            <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-center">
+                <div
+                    class="w-16 h-16 mb-5 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+                <h3 class="text-base font-bold dark:text-white mb-1">No notes yet</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 max-w-xs">No notes have been uploaded to this
+                    section yet. Check back later.</p>
+            </div>
         </div>
     </main>
 
@@ -1732,6 +1886,24 @@
                     <p class="text-slate-400 text-xs font-bold tracking-widest uppercase">Loading PDF...</p>
                 </div>
                 <!-- Google Drive Preview Iframe -->
+                <div id="pdfError"
+                    class="hidden flex flex-col items-center justify-center h-full gap-4 text-center p-6">
+                    <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                    </svg>
+                    <p class="text-slate-400 font-bold text-sm">Couldn't load the PDF</p>
+                    <div class="flex gap-2">
+                        <button id="pdfRetryBtn"
+                            class="px-4 py-2 bg-primary-600 text-white rounded-xl text-xs font-bold hover:bg-primary-700 transition-colors">
+                            Retry
+                        </button>
+                        <a id="pdfOpenInDrive" href="#" target="_blank" rel="noopener noreferrer"
+                            class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                            Open in Drive
+                        </a>
+                    </div>
+                </div>
                 <iframe id="pdfIframe" title="PDF Document Viewer" class="hidden w-full h-full"
                     allowfullscreen></iframe>
             </div>
@@ -1748,6 +1920,12 @@
         <span id="pullRefreshText" class="text-xs font-bold text-slate-500 dark:text-slate-400">Pull to refresh</span>
     </div>
 
+    <button id="backToTopBtn" aria-label="Back to top"
+        class="fixed bottom-6 right-6 z-50 p-3 rounded-2xl shadow-xl transition-all duration-300">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+        </svg>
+    </button>
     <script src="script.js" defer></script>
 </body>
 
