@@ -146,6 +146,45 @@
             font-size: 1.25rem;
             line-height: 1.75rem;
         }
+
+        .pt-16 {
+            padding-top: 4rem;
+        }
+
+        .sidebar-width {
+            width: 16rem;
+        }
+
+        .-translate-x-full {
+            transform: translateX(-100%);
+        }
+
+        .top-16 {
+            top: 4rem;
+        }
+
+        .bottom-0 {
+            bottom: 0;
+        }
+
+        .z-30 {
+            z-index: 30;
+        }
+
+        @media (min-width: 768px) {
+            .md\:ml-64 {
+                margin-left: 16rem;
+            }
+            .md\:translate-x-0 {
+                transform: translateX(0);
+            }
+            .md\:hidden {
+                display: none;
+            }
+            .md\:block {
+                display: block;
+            }
+        }
     </style>
 
     <!-- Defer main stylesheet with cache-buster -->
@@ -174,7 +213,7 @@
                 <a href="/" class="flex items-center">
                     <picture>
                         <source srcset="/logo.webp" type="image/webp">
-                        <img src="/logo.png" alt="EduCrate Logo" class="w-7 h-7 mr-2 rounded-lg object-cover">
+                        <img src="/logo.png" alt="EduCrate Logo" class="w-7 h-7 mr-2 rounded-lg object-cover" width="28" height="28">
                     </picture>
                     <span
                         class="text-xl font-extrabold text-primary-600 dark:text-primary-400 tracking-tight">EduCrate</span>
@@ -503,13 +542,20 @@
         </svg>
     </button>
     <script src="script.js?v=1.0.0" defer></script>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZCFG4LVQTC"></script>
+    <!-- Google tag (gtag.js) - Delayed for TBT optimization -->
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
         gtag('config', 'G-ZCFG4LVQTC');
+        
+        // Stagger script loading to reduce TBT
+        (window.requestIdleCallback || setTimeout)(function() {
+            var gaScript = document.createElement('script');
+            gaScript.src = "https://www.googletagmanager.com/gtag/js?id=G-ZCFG4LVQTC";
+            gaScript.async = true;
+            document.body.appendChild(gaScript);
+        }, 500);
     </script>
 </body>
 
