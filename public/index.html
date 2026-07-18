@@ -2,16 +2,7 @@
 <html lang="en" class="scroll-smooth">
 
 <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZCFG4LVQTC"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
-        gtag('js', new Date());
-
-        gtag('config', 'G-ZCFG4LVQTC');
-    </script>
-
+    <!-- Google Analytics moved to end of body for performance -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>EduCrate | CS2 Notes</title>
@@ -82,7 +73,30 @@
     }
     </script>
     <link id="lcpImagePreload" rel="preload" as="image" href="/logo.webp">
-    <link rel="stylesheet" href="/styles.css">
+    
+    <!-- Critical CSS for initial paint -->
+    <style>
+        body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #ffffff; color: #475569; min-height: 100vh; }
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #0f172a; color: #cbd5e1; }
+        }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .fixed { position: fixed; }
+        nav { height: 4rem; width: 100%; top: 0; left: 0; z-index: 60; background: rgba(255,255,255,0.8); backdrop-filter: blur(12px); border-bottom: 1px solid #e2e8f0; }
+        @media (prefers-color-scheme: dark) {
+            nav { background: rgba(15,23,42,0.8); border-bottom-color: #1e293b; }
+        }
+        .max-w-7xl { max-width: 80rem; margin-left: auto; margin-right: auto; }
+        .w-7 { width: 1.75rem; } .h-7 { height: 1.75rem; }
+        .font-extrabold { font-weight: 800; }
+        .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+    </style>
+
+    <!-- Defer main stylesheet with cache-buster -->
+    <link rel="preload" href="/styles.css?v=1.0.0" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="/styles.css?v=1.0.0"></noscript>
 </head>
 
 <body class="min-h-screen font-sans selection:bg-primary-100 dark:selection:bg-primary-900">
@@ -432,7 +446,16 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
         </svg>
     </button>
-    <script src="script.js" defer></script>
+    <script src="script.js?v=1.0.0" defer></script>
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZCFG4LVQTC"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-ZCFG4LVQTC');
+    </script>
 </body>
 
 </html>
