@@ -936,6 +936,32 @@ function renderBreadcrumbs(breadcrumbs) {
     }).join('');
     
     nav.innerHTML = html;
+
+    // SEO JSON-LD Breadcrumbs
+    let ldScript = document.getElementById('breadcrumb-ld');
+    if (breadcrumbs && breadcrumbs.length > 0) {
+        if (!ldScript) {
+            ldScript = document.createElement('script');
+            ldScript.id = 'breadcrumb-ld';
+            ldScript.type = 'application/ld+json';
+            document.head.appendChild(ldScript);
+        }
+        
+        const itemListElement = breadcrumbs.map((crumb, index) => ({
+            "@type": "ListItem",
+            "position": index + 1,
+            "name": crumb.name,
+            "item": "https://edunoteshub.netlify.app/?folder=" + crumb.id
+        }));
+        
+        ldScript.textContent = JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": itemListElement
+        });
+    } else if (ldScript) {
+        ldScript.remove();
+    }
 }
 
 function renderFolderContents(folders, files) {
