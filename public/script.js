@@ -714,6 +714,13 @@ async function selectFolder(id, name, options = {}) {
         elements.sortSelect.value = currentSortOrder;
     }
     elements.contentTitle.textContent = name;
+    document.title = `${name} | EduCrate CS2 Notes`;
+    
+    // Remove dynamic noindex tag if it exists (for valid folders)
+    const existingNoIndex = document.querySelector('meta[name="robots"][content="noindex"]');
+    if (existingNoIndex) {
+        existingNoIndex.remove();
+    }
     elements.emptyState.classList.add('hidden');
     updateLcpImagePreload(null);
     if (!options.skipUrlSync) {
@@ -729,6 +736,7 @@ async function selectFolder(id, name, options = {}) {
     if (cachedFiles[id]) {
         const cache = cachedFiles[id];
         elements.contentTitle.textContent = cache.folderName || name;
+        document.title = `${cache.folderName || name} | EduCrate CS2 Notes`;
         renderFolderContents(cache.folders, sortFilesByModified(cache.files));
         renderBreadcrumbs(cache.breadcrumbs);
         // Start polling after initial render is done
@@ -744,6 +752,7 @@ async function selectFolder(id, name, options = {}) {
             cachedFiles[id] = { folders, files, breadcrumbs, folderName };
             if (id === currentFolderId) {
                 elements.contentTitle.textContent = folderName;
+                document.title = `${folderName} | EduCrate CS2 Notes`;
                 renderFolderContents(folders, sortFilesByModified(files));
                 renderBreadcrumbs(breadcrumbs);
                 if (folders.length === 0 && files.length === 0) {
@@ -756,6 +765,13 @@ async function selectFolder(id, name, options = {}) {
             if (id === currentFolderId) {
                 elements.filesGrid.innerHTML = '';
                 elements.emptyState.classList.remove('hidden');
+                document.title = `Folder Not Found | EduCrate CS2 Notes`;
+                if (!document.querySelector('meta[name="robots"][content="noindex"]')) {
+                    const meta = document.createElement('meta');
+                    meta.name = 'robots';
+                    meta.content = 'noindex';
+                    document.head.appendChild(meta);
+                }
             }
         }
     } catch(e) { 
@@ -763,6 +779,13 @@ async function selectFolder(id, name, options = {}) {
         if (id === currentFolderId) {
             elements.filesGrid.innerHTML = '';
             elements.emptyState.classList.remove('hidden');
+            document.title = `Folder Not Found | EduCrate CS2 Notes`;
+            if (!document.querySelector('meta[name="robots"][content="noindex"]')) {
+                const meta = document.createElement('meta');
+                meta.name = 'robots';
+                meta.content = 'noindex';
+                document.head.appendChild(meta);
+            }
         }
     }
 }
@@ -913,6 +936,32 @@ function renderBreadcrumbs(breadcrumbs) {
     }).join('');
     
     nav.innerHTML = html;
+
+    // SEO JSON-LD Breadcrumbs
+    let ldScript = document.getElementById('breadcrumb-ld');
+    if (breadcrumbs && breadcrumbs.length > 0) {
+        if (!ldScript) {
+            ldScript = document.createElement('script');
+            ldScript.id = 'breadcrumb-ld';
+            ldScript.type = 'application/ld+json';
+            document.head.appendChild(ldScript);
+        }
+        
+        const itemListElement = breadcrumbs.map((crumb, index) => ({
+            "@type": "ListItem",
+            "position": index + 1,
+            "name": crumb.name,
+            "item": "https://edunoteshub.netlify.app/?folder=" + crumb.id
+        }));
+        
+        ldScript.textContent = JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": itemListElement
+        });
+    } else if (ldScript) {
+        ldScript.remove();
+    }
 }
 
 function renderFolderContents(folders, files) {
