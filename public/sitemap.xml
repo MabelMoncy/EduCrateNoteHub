@@ -1,9 +1,58 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<!--
+  EduCrate Note Hub — Sitemap
+  Generated: 2026-07-19
+  Canonical domain: https://edunoteshub.netlify.app
+
+  Notes:
+  • EduCrate is a Single-Page Application (SPA). All navigation happens
+    client-side via URL parameters (?folder=<id>&file=<id>). Because the
+    folder/file IDs are dynamic (served from Google Drive), only the
+    root entry-point URL is listed here.
+  • Image sub-elements follow the Google Image Sitemap extension schema:
+    https://www.sitemaps.org/schemas/sitemap-image/1.1/
+-->
+<urlset
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="
+    http://www.sitemaps.org/schemas/sitemap/0.9
+    http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd
+    http://www.google.com/schemas/sitemap-image/1.1
+    http://www.google.com/schemas/sitemap-image/1.1/sitemap-image.xsd">
+
+  <!--
+    ═══════════════════════════════════════════════════════════════
+    PRIMARY PAGE — Application Root
+    The main entry point for the EduCrate digital library.
+    All subjects, folders, and documents are accessible from here
+    via client-side navigation using URL parameters.
+    ═══════════════════════════════════════════════════════════════
+  -->
   <url>
-    <loc>https://educratenoteshub.vercel.app/</loc>
-    <lastmod>2024-05-15</lastmod>
+    <loc>https://edunoteshub.netlify.app/</loc>
+    <lastmod>2026-07-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+
+    <!-- Open Graph / Social preview image -->
+    <image:image>
+      <image:loc>https://edunoteshub.netlify.app/og-image.jpg</image:loc>
+      <image:title>EduCrate — CS2 Notes Digital Library</image:title>
+      <image:caption>
+        EduCrate is a modern digital library for S4 Computer Science &amp;
+        Engineering students to store, organize, and access course materials
+        and notes.
+      </image:caption>
+    </image:image>
+
+    <!-- App logo / brand image -->
+    <image:image>
+      <image:loc>https://edunoteshub.netlify.app/logo.webp</image:loc>
+      <image:title>EduCrate Logo</image:title>
+      <image:caption>Official logo of the EduCrate Note Hub application.</image:caption>
+    </image:image>
   </url>
+
 </urlset>

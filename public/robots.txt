@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
-Sitemap: https://educratenoteshub.vercel.app/sitemap.xml
+Sitemap: https://edunoteshub.netlify.app/sitemap.xml
