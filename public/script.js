@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupEventListeners();
     await loadFolderTree();
     await hydrateFromUrl();
-    
+
     // Back to top button
     const backToTopBtn = document.getElementById('backToTopBtn');
     if (backToTopBtn) {
@@ -172,7 +172,7 @@ function setupEventListeners() {
     // Mobile Search Logic
     elements.mobileSearchTrigger.addEventListener('click', () => toggleMobileSearch(true), { passive: true });
     elements.closeSearchBtn.addEventListener('click', () => toggleMobileSearch(false), { passive: true });
-    
+
     elements.searchResults.addEventListener('click', (e) => {
         if (isMobile) toggleMobileSearch(false);
     }, { passive: true });
@@ -185,7 +185,7 @@ function setupEventListeners() {
 
     elements.themeToggle.addEventListener('click', toggleTheme, { passive: true });
     elements.closePdfBtn.addEventListener('click', closePdf, { passive: true });
-    
+
     // Download button - uses fetch+blob to force real download on all devices
     elements.pdfDownload.addEventListener('click', handleDownloadClick);
 
@@ -207,10 +207,10 @@ function setupEventListeners() {
     if (elements.sortSelect) {
         elements.sortSelect.addEventListener('change', handleSortChange, { passive: true });
     }
-    
+
     // Pull-to-refresh for mobile
     setupPullToRefresh();
-    
+
     // Keyboard shortcut to close PDF viewer
     document.addEventListener('keydown', (e) => {
         if (!elements.pdfModal.classList.contains('hidden') && e.key === 'Escape') {
@@ -233,7 +233,7 @@ function setupEventListeners() {
             }
         }
     });
-    
+
     // Hide loading when iframe loads
     elements.pdfIframe.addEventListener('load', () => {
         if (pdfLoadFallbackTimer) {
@@ -243,11 +243,11 @@ function setupEventListeners() {
         elements.pdfLoading.classList.add('hidden');
         elements.pdfIframe.classList.remove('hidden');
     });
-    
+
     // Handle browser back/forward for deep links and PDF modal
     window.addEventListener('popstate', async () => {
         const { folderId, fileId } = getUrlState();
-        
+
         if (fileId) {
             const folderReady = await ensureFolderSelectedById(folderId, { skipUrlSync: true });
             if (!folderReady) {
@@ -255,7 +255,7 @@ function setupEventListeners() {
                 replaceUrlState(null, null);
                 return;
             }
-            
+
             let cache = cachedFiles[folderId] || { files: [] };
             let targetFile = cache.files.find(f => f.id === fileId);
             if (!targetFile) {
@@ -287,7 +287,7 @@ function setupEventListeners() {
             elements.welcomeState.classList.remove('hidden');
         }
     });
-    
+
     // Pause polling when tab is hidden to save battery and bandwidth
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
@@ -327,7 +327,7 @@ function isEditableTarget(target) {
 }
 
 function toggleMobileSearch(isActive) {
-    if (!isMobile) return; 
+    if (!isMobile) return;
     requestAnimationFrame(() => {
         if (isActive) {
             elements.logoContainer.classList.add('hidden');
@@ -387,12 +387,12 @@ async function loadFolderTree() {
     try {
         const res = await fetch(API_BASE + '/tree');
         const data = await res.json();
-        if(data.success) {
+        if (data.success) {
             cachedTree = data.data;
             renderFolderTree(cachedTree);
             startFolderPolling();
         }
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
 }
 
 async function ensureFolderSelectedById(folderId, options = {}) {
@@ -468,7 +468,7 @@ async function pollFiles() {
             const newFolders = data.data.folders || [];
             const breadcrumbs = data.data.breadcrumbs || [];
             const currentCache = cachedFiles[currentFolderId] || { files: [], folders: [] };
-            
+
             if (!areFilesEqual(currentCache.files, newFiles) || !areFoldersEqual(currentCache.folders, newFolders)) {
                 cachedFiles[currentFolderId] = { folders: newFolders, files: newFiles, breadcrumbs };
                 if (newFiles.length > 0 || newFolders.length > 0) {
@@ -587,11 +587,11 @@ function buildTreeHtml(node, level = 0, isInitial = false) {
 
     if (!node.children || node.children.length === 0) {
         return '<li class="tree-item">' +
-                '<button class="tree-toggle tree-leaf ' + (node.id === currentFolderId ? 'is-active' : '') + '" data-folder-id="' + escapeHtml(node.id) + '" data-folder-name="' + escapeHtml(node.name) + '" style="padding-left: ' + (level * 0.75 + 0.5) + 'rem">' +
-                    '<span class="tree-icon">' + getSubjectIconSvg(node.name) + '</span>' +
-                    '<span class="tree-label">' + escapeHtml(node.name) + '</span>' +
-                    countBadge +
-                '</button>' +
+            '<button class="tree-toggle tree-leaf ' + (node.id === currentFolderId ? 'is-active' : '') + '" data-folder-id="' + escapeHtml(node.id) + '" data-folder-name="' + escapeHtml(node.name) + '" style="padding-left: ' + (level * 0.75 + 0.5) + 'rem">' +
+            '<span class="tree-icon">' + getSubjectIconSvg(node.name) + '</span>' +
+            '<span class="tree-label">' + escapeHtml(node.name) + '</span>' +
+            countBadge +
+            '</button>' +
             '</li>';
     }
 
@@ -600,29 +600,29 @@ function buildTreeHtml(node, level = 0, isInitial = false) {
         if (n.children) return n.children.some(isParentOfCurrent);
         return false;
     }
-    
+
     const isExpanded = isInitial ? (level === 0 || isParentOfCurrent(node)) : false;
     const childrenHtml = isExpanded ? node.children.map(child => buildTreeHtml(child, level + 1, isInitial)).join('') : '';
-    
+
     return '<li class="tree-item ' + (isExpanded ? 'is-expanded' : '') + '">' +
-            '<button class="tree-toggle ' + (node.id === currentFolderId ? 'is-active' : '') + '" data-folder-id="' + escapeHtml(node.id) + '" data-folder-name="' + escapeHtml(node.name) + '" style="padding-left: ' + (level * 0.75 + 0.5) + 'rem">' +
-                '<span class="tree-chevron flex items-center justify-center">' +
-                    '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>' +
-                '</span>' +
-                '<span class="tree-icon">' + getSubjectIconSvg(node.name) + '</span>' +
-                '<span class="tree-label">' + escapeHtml(node.name) + '</span>' +
-                countBadge +
-            '</button>' +
-            '<ul class="tree-children ' + (isExpanded ? '' : 'hidden') + '" data-level="' + (level + 1) + '" data-rendered="' + (isExpanded ? 'true' : 'false') + '">' +
-                childrenHtml +
-            '</ul>' +
+        '<button class="tree-toggle ' + (node.id === currentFolderId ? 'is-active' : '') + '" data-folder-id="' + escapeHtml(node.id) + '" data-folder-name="' + escapeHtml(node.name) + '" style="padding-left: ' + (level * 0.75 + 0.5) + 'rem">' +
+        '<span class="tree-chevron flex items-center justify-center">' +
+        '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>' +
+        '</span>' +
+        '<span class="tree-icon">' + getSubjectIconSvg(node.name) + '</span>' +
+        '<span class="tree-label">' + escapeHtml(node.name) + '</span>' +
+        countBadge +
+        '</button>' +
+        '<ul class="tree-children ' + (isExpanded ? '' : 'hidden') + '" data-level="' + (level + 1) + '" data-rendered="' + (isExpanded ? 'true' : 'false') + '">' +
+        childrenHtml +
+        '</ul>' +
         '</li>';
 }
 
 function renderFolderTree(tree) {
     if (!tree || !tree.children) return;
     const html = '<ul class="tree-list">' + tree.children.map(child => buildTreeHtml(child, 0, true)).join('') + '</ul>';
-    
+
     requestAnimationFrame(() => {
         elements.foldersList.removeEventListener('click', handleTreeClick);
         elements.foldersList.innerHTML = html;
@@ -637,7 +637,7 @@ function updateActiveFolderButton() {
         const isActive = folderId === currentFolderId;
         btn.classList.toggle('is-active', isActive);
         btn.setAttribute('aria-current', isActive ? 'page' : 'false');
-        
+
         // Update badge
         const count = cachedFiles[folderId] ? cachedFiles[folderId].files.length : null;
         if (count !== null) {
@@ -654,7 +654,7 @@ function updateActiveFolderButton() {
             let parentItem = btn.closest('.tree-children')?.closest('.tree-item');
             while (parentItem) {
                 parentItem.classList.add('is-expanded');
-                
+
                 const childrenList = parentItem.querySelector('.tree-children');
                 if (childrenList.dataset.rendered === 'false') {
                     const node = findNodeInTree(cachedTree, parentItem.querySelector('.tree-toggle').dataset.folderId);
@@ -664,7 +664,7 @@ function updateActiveFolderButton() {
                     }
                     childrenList.dataset.rendered = 'true';
                 }
-                
+
                 childrenList.classList.remove('hidden');
                 parentItem = parentItem.parentElement.closest('.tree-item');
             }
@@ -675,13 +675,13 @@ function updateActiveFolderButton() {
 function handleTreeClick(e) {
     const toggleBtn = e.target.closest('.tree-toggle');
     if (!toggleBtn) return;
-    
+
     const chevron = e.target.closest('.tree-chevron');
     if (chevron && !toggleBtn.classList.contains('tree-leaf')) {
         const treeItem = toggleBtn.closest('.tree-item');
         const childrenList = treeItem.querySelector('.tree-children');
         const isExpanded = treeItem.classList.contains('is-expanded');
-        
+
         if (isExpanded) {
             treeItem.classList.remove('is-expanded');
             childrenList.classList.add('hidden');
@@ -715,7 +715,7 @@ async function selectFolder(id, name, options = {}) {
     }
     elements.contentTitle.textContent = name;
     document.title = `${name} | EduCrate CS2 Notes`;
-    
+
     // Remove dynamic noindex tag if it exists (for valid folders)
     const existingNoIndex = document.querySelector('meta[name="robots"][content="noindex"]');
     if (existingNoIndex) {
@@ -747,7 +747,7 @@ async function selectFolder(id, name, options = {}) {
     try {
         const res = await fetch(API_BASE + '/folder-contents/' + id);
         const data = await res.json();
-        if(data.success) {
+        if (data.success) {
             const { folders, files, breadcrumbs, folderName } = data.data;
             cachedFiles[id] = { folders, files, breadcrumbs, folderName };
             if (id === currentFolderId) {
@@ -774,7 +774,7 @@ async function selectFolder(id, name, options = {}) {
                 }
             }
         }
-    } catch(e) { 
+    } catch (e) {
         console.error(e);
         if (id === currentFolderId) {
             elements.filesGrid.innerHTML = '';
@@ -798,48 +798,48 @@ function setupPullToRefresh() {
     let isRefreshing = false;
     const PULL_THRESHOLD = 80;
     const mainEl = document.querySelector('main');
-    
+
     mainEl.addEventListener('touchstart', (e) => {
         // Only activate when scrolled to top and not in modal
         if (window.scrollY > 5 || isRefreshing || !elements.pdfModal.classList.contains('hidden')) return;
         startY = e.touches[0].clientY;
         pulling = true;
     }, { passive: true });
-    
+
     mainEl.addEventListener('touchmove', (e) => {
         if (!pulling || isRefreshing) return;
         currentY = e.touches[0].clientY;
         const pullDistance = currentY - startY;
-        
+
         if (pullDistance < 0) { pulling = false; return; }
-        
+
         // Show indicator proportional to pull distance
         const progress = Math.min(pullDistance / PULL_THRESHOLD, 1);
         const translateY = Math.min(pullDistance * 0.5, 50) - 60;
         elements.pullRefreshIndicator.style.transform = `translateX(-50%) translateY(${translateY}px)`;
         elements.pullRefreshIndicator.classList.add('visible');
-        
+
         if (progress >= 1) {
             elements.pullRefreshText.textContent = 'Release to refresh';
         } else {
             elements.pullRefreshText.textContent = 'Pull to refresh';
         }
     }, { passive: true });
-    
+
     mainEl.addEventListener('touchend', async () => {
         if (!pulling || isRefreshing) return;
         const pullDistance = currentY - startY;
         pulling = false;
-        
+
         if (pullDistance >= PULL_THRESHOLD) {
             // Trigger refresh
             isRefreshing = true;
             elements.pullRefreshIndicator.classList.add('refreshing');
             elements.pullRefreshText.textContent = 'Refreshing...';
             elements.pullRefreshIndicator.style.transform = 'translateX(-50%) translateY(0px)';
-            
+
             await performFullRefresh();
-            
+
             // Delay hiding for visual feedback
             setTimeout(() => {
                 isRefreshing = false;
@@ -848,7 +848,7 @@ function setupPullToRefresh() {
         } else {
             hideRefreshIndicator();
         }
-        
+
         startY = 0;
         currentY = 0;
     }, { passive: true });
@@ -870,7 +870,7 @@ async function performFullRefresh() {
             renderFolderTree(cachedTree);
         }
     } catch (e) { console.error('Refresh folders error:', e); }
-    
+
     // Refresh current folder's files if viewing one
     if (currentFolderId) {
         delete cachedFiles[currentFolderId];
@@ -901,9 +901,9 @@ function renderSkeletons() {
     const skeletonCount = isMobile ? 2 : 3;
     elements.filesGrid.innerHTML = Array.from({ length: skeletonCount }, () =>
         '<div class="file-skeleton p-3 sm:p-4">' +
-            '<div class="thumbnail-shell shimmer rounded-xl mb-3"></div>' +
-            '<div class="h-4 shimmer rounded mb-2"></div>' +
-            '<div class="h-3 w-20 shimmer rounded"></div>' +
+        '<div class="thumbnail-shell shimmer rounded-xl mb-3"></div>' +
+        '<div class="h-4 shimmer rounded mb-2"></div>' +
+        '<div class="h-3 w-20 shimmer rounded"></div>' +
         '</div>'
     ).join('');
 }
@@ -911,16 +911,16 @@ function renderSkeletons() {
 function buildFolderCardHtml(folder) {
     return '<div class="folder-card" data-folder-id="' + escapeHtml(folder.id) + '" data-folder-name="' + escapeHtml(folder.name) + '">' +
         '<div class="folder-card-icon">' +
-            '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>' +
+        '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>' +
         '</div>' +
         '<div class="folder-card-name">' + escapeHtml(folder.name) + '</div>' +
-    '</div>';
+        '</div>';
 }
 
 function renderBreadcrumbs(breadcrumbs) {
     const nav = document.getElementById('breadcrumbTrail');
     if (!nav) return;
-    
+
     if (!breadcrumbs || breadcrumbs.length === 0) {
         nav.innerHTML = '';
         return;
@@ -932,9 +932,9 @@ function renderBreadcrumbs(breadcrumbs) {
             return '<span class="breadcrumb-item cursor-default text-primary-600 dark:text-primary-400 font-bold">' + escapeHtml(crumb.name) + '</span>';
         }
         return '<span class="breadcrumb-item" data-folder-id="' + escapeHtml(crumb.id) + '" data-folder-name="' + escapeHtml(crumb.name) + '">' + escapeHtml(crumb.name) + '</span>' +
-               '<span class="breadcrumb-separator">›</span>';
+            '<span class="breadcrumb-separator">›</span>';
     }).join('');
-    
+
     nav.innerHTML = html;
 
     // SEO JSON-LD Breadcrumbs
@@ -946,14 +946,14 @@ function renderBreadcrumbs(breadcrumbs) {
             ldScript.type = 'application/ld+json';
             document.head.appendChild(ldScript);
         }
-        
+
         const itemListElement = breadcrumbs.map((crumb, index) => ({
             "@type": "ListItem",
             "position": index + 1,
             "name": crumb.name,
             "item": "https://edunoteshub.netlify.app/?folder=" + crumb.id
         }));
-        
+
         ldScript.textContent = JSON.stringify({
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
@@ -1015,15 +1015,23 @@ function renderFolderContents(folders, files) {
 
 function getRelativeDate(isoString) {
     if (!isoString) return null;
-    const diff = Date.now() - new Date(isoString).getTime();
+
+    const time = new Date(isoString).getTime();
+    if (isNaN(time)) return null; // Handle invalid date strings
+
+    // Ensure we don't get negative diffs for future dates
+    const diff = Math.max(0, Date.now() - time);
     const days = Math.floor(diff / 86400000);
-    if (days === 0) return 'Today';
-    if (days === 1) return 'Yesterday';
-    if (days < 7) return days + 'd ago';
-    if (days < 30) return Math.floor(days / 7) + 'w ago';
-    if (days < 365) return Math.floor(days / 30) + 'mo ago';
-    return Math.floor(days / 365) + 'y ago';
+
+    if (days === 0) return 'Last Updated: Today';
+    if (days === 1) return 'Last Updated: Yesterday';
+    if (days < 7) return "Last Updated: " + days + 'd ago';
+    if (days < 30) return "Last Updated: " + Math.floor(days / 7) + 'w ago';
+    if (days < 365) return "Last Updated: " + Math.floor(days / 30) + 'mo ago';
+    return "Last Updated: " + Math.floor(days / 365) + 'y ago';
 }
+
+
 
 function buildFileCardHtml(file, isLcpImage) {
     const escapedName = escapeHtml(file.name.replace('.pdf', ''));
@@ -1035,29 +1043,29 @@ function buildFileCardHtml(file, isLcpImage) {
 
     const thumbnailHtml = file.thumbnailUrl
         ? '<div class="note-thumb thumbnail-shell bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden mb-3">' +
-            '<img src="' + escapeHtml(file.thumbnailUrl) + '" alt="' + escapedName + '" width="320" height="180" class="w-full h-full object-cover object-top" ' + imageLoadingAttrs + ' decoding="async" onerror="this.parentElement.innerHTML=\'<div class=\\\'flex items-center justify-center h-full text-red-400\\\'><svg class=\\\'w-12 h-12\\\' fill=\\\'currentColor\\\' viewBox=\\\'0 0 24 24\\\'><path d=\\\'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z\\\'/><path d=\\\'M14 2v6h6\\\'/></svg></div>\'">' +
-          '</div>'
+        '<img src="' + escapeHtml(file.thumbnailUrl) + '" alt="' + escapedName + '" width="320" height="180" class="w-full h-full object-cover object-top" ' + imageLoadingAttrs + ' decoding="async" onerror="this.parentElement.innerHTML=\'<div class=\\\'flex items-center justify-center h-full text-red-400\\\'><svg class=\\\'w-12 h-12\\\' fill=\\\'currentColor\\\' viewBox=\\\'0 0 24 24\\\'><path d=\\\'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z\\\'/><path d=\\\'M14 2v6h6\\\'/></svg></div>\'">' +
+        '</div>'
         : '<div class="note-thumb note-fallback thumbnail-shell bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden mb-3 flex items-center justify-center text-red-400">' +
-            '<svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6"/></svg>' +
-          '</div>';
+        '<svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6"/></svg>' +
+        '</div>';
 
     return '<div class="file-card note-card cursor-pointer bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:border-primary-400 transition-all group active:scale-[0.98]" data-file=\'' + fileJson + '\'>' +
         thumbnailHtml +
         '<div class="note-body px-1">' +
-            '<h4 class="note-title font-bold dark:text-white text-sm sm:text-base leading-tight">' + escapedName + '</h4>' +
-            '<div class="note-meta">' +
-                '<span class="note-size">' +
-                    '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 2v6h6"/></svg>' +
-                    escapedSize +
-                '</span>' +
-                dateHtml +
-                '<span class="note-open">' +
-                    'Open' +
-                    '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>' +
-                '</span>' +
-            '</div>' +
+        '<h4 class="note-title font-bold dark:text-white text-sm sm:text-base leading-tight">' + escapedName + '</h4>' +
+        '<div class="note-meta">' +
+        '<span class="note-size">' +
+        '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 2v6h6"/></svg>' +
+        escapedSize +
+        '</span>' +
+        dateHtml +
+        '<span class="note-open">' +
+        'Open' +
+        '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>' +
+        '</span>' +
         '</div>' +
-    '</div>';
+        '</div>' +
+        '</div>';
 }
 
 function handleFileClick(e) {
@@ -1077,17 +1085,17 @@ function openPdf(file, options = {}) {
         console.error('Invalid file data');
         return;
     }
-    
+
     document.body.classList.add('modal-open');
     elements.pdfModal.classList.remove('hidden');
     elements.pdfTitle.textContent = file.name || 'Unknown';
-    
+
     // Store file data for download handler
     elements.pdfDownload.dataset.fileId = file.id;
     elements.pdfDownload.dataset.fileName = file.name || 'document.pdf';
     elements.pdfDownload.href = '#'; // Prevent default navigation
     elements.pdfDownload.removeAttribute('download'); // Remove download attr, handled via JS
-    
+
     // Reset viewer state
     window.currentPdfFile = file;
     elements.pdfLoading.classList.remove('hidden');
@@ -1099,7 +1107,7 @@ function openPdf(file, options = {}) {
     // Prefer in-app stream preview first. If it takes too long, fall back to Drive preview.
     const streamPreviewUrl = file.viewUrl || `${API_BASE}/pdf/${encodeURIComponent(file.id)}`;
     const drivePreviewUrl = `${API_BASE}/view/${encodeURIComponent(file.id)}`;
-    
+
     elements.pdfIframe.onerror = () => showPdfError(file);
     elements.pdfIframe.src = streamPreviewUrl;
 
@@ -1139,7 +1147,7 @@ function closePdf(fromPopState) {
     elements.pdfLoading.classList.add('hidden');
     elements.pdfIframe.classList.add('hidden');
     elements.pdfIframe.src = ''; // Clear iframe to stop loading/playing
-    
+
     // If closed via X button or Escape (not from back swipe), pop the history entry we pushed
     if (!fromPopState) {
         if (history.state && history.state.pdfOpen) {
@@ -1154,18 +1162,18 @@ function closePdf(fromPopState) {
 async function handleDownloadClick(e) {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const fileId = elements.pdfDownload.dataset.fileId;
     const fileName = elements.pdfDownload.dataset.fileName || 'document.pdf';
-    
+
     if (!fileId) return;
-    
+
     // Show downloading state on button
     const btn = elements.pdfDownload;
     const originalHTML = btn.innerHTML;
     btn.innerHTML = '<svg class="w-3 h-3 sm:w-4 sm:h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg><span>DOWNLOADING...</span>';
     btn.style.pointerEvents = 'none';
-    
+
     try {
         // Fetch PDF bytes through our server (bypasses Google account picker on mobile)
         const res = await fetch(API_BASE + '/download/' + fileId);
@@ -1197,7 +1205,7 @@ async function handleDownloadClick(e) {
         }
 
         const url = URL.createObjectURL(blob);
-        
+
         // Create temporary link and trigger download
         const a = document.createElement('a');
         a.href = url;
@@ -1205,7 +1213,7 @@ async function handleDownloadClick(e) {
         a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
-        
+
         // Cleanup
         setTimeout(() => {
             document.body.removeChild(a);
@@ -1233,19 +1241,19 @@ function handleSearchFocus() {
 function handleSearch(e) {
     const q = e.target.value.trim();
     clearTimeout(searchTimeout);
-    if(q.length < 2) { 
+    if (q.length < 2) {
         activeSearchIndex = -1;
         elements.searchInput.removeAttribute('aria-activedescendant');
         elements.searchInput.setAttribute('aria-expanded', 'false');
-        elements.searchResults.classList.add('hidden'); 
-        return; 
+        elements.searchResults.classList.add('hidden');
+        return;
     }
     const debounceTime = isMobile ? 600 : 400;
     searchTimeout = setTimeout(async () => {
         try {
             const res = await fetch(API_BASE + '/search?q=' + encodeURIComponent(q));
             const data = await res.json();
-            if(data.success && data.data.length > 0) {
+            if (data.success && data.data.length > 0) {
                 renderSearchResults(data.data.sort(naturalSort));
             } else {
                 activeSearchIndex = -1;
@@ -1253,7 +1261,7 @@ function handleSearch(e) {
                 elements.searchInput.setAttribute('aria-expanded', 'false');
                 elements.searchResults.classList.add('hidden');
             }
-        } catch(e) { console.error(e); }
+        } catch (e) { console.error(e); }
     }, debounceTime);
 }
 
@@ -1265,12 +1273,12 @@ function renderSearchResults(results) {
         return '<div id="searchResult-' + index + '" role="option" aria-selected="false" tabindex="-1" class="search-result cursor-pointer p-3 flex items-center gap-3 active:bg-slate-100 dark:active:bg-slate-600" data-file=\'' + fileJson + '\'>' +
             '<span class="search-result-icon" aria-hidden="true"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg></span>' +
             '<span class="search-result-text">' +
-                '<span class="search-result-name">' + displayName + '</span>' +
-                '<span class="search-result-label">' + escapeHtml(f.breadcrumbLabel || f.folderName || 'PDF note') + '</span>' +
+            '<span class="search-result-name">' + displayName + '</span>' +
+            '<span class="search-result-label">' + escapeHtml(f.breadcrumbLabel || f.folderName || 'PDF note') + '</span>' +
             '</span>' +
-        '</div>';
+            '</div>';
     }).join('');
-    
+
     requestAnimationFrame(() => {
         activeSearchIndex = -1;
         elements.searchInput.removeAttribute('aria-activedescendant');
