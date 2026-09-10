@@ -601,7 +601,7 @@ function buildTreeHtml(node, level = 0, isInitial = false) {
         return false;
     }
 
-    const isExpanded = isInitial ? (level === 0 || isParentOfCurrent(node)) : false;
+    const isExpanded = isInitial ? isParentOfCurrent(node) : false;
     const childrenHtml = isExpanded ? node.children.map(child => buildTreeHtml(child, level + 1, isInitial)).join('') : '';
 
     return '<li class="tree-item ' + (isExpanded ? 'is-expanded' : '') + '">' +
