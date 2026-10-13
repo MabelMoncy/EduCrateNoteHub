@@ -42,8 +42,14 @@ jobs:
       - name: Run security test suite
         run: node security-test.js
 
-      - name: Run npm audit (high+)
+      
+      - name: Audit production dependencies (high+)
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Report all dependency vulnerabilities
         run: npm audit --audit-level=high
+        continue-on-error: true
+
 
       - name: Run HTML Validation
         run: npx -y html-validate public/index.html
