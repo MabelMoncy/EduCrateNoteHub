@@ -55,7 +55,6 @@ const elements = {
     pdfTitle: document.getElementById('pdfTitle'),
     pdfLoading: document.getElementById('pdfLoading'),
     pdfIframe: document.getElementById('pdfIframe'),
-    pdfContainer: document.getElementById('pdfContainer'),
     closePdfBtn: document.getElementById('closePdfBtn'),
     pdfDownload: document.getElementById('pdfDownload'),
     logoContainer: document.getElementById('logoContainer'),
@@ -73,6 +72,68 @@ const elements = {
     sortContainer: document.getElementById('sortContainer'),
     sortSelect: document.getElementById('sortSelect')
 };
+
+// --- INTERMEDIATE & CLIENT-SIDE CACHING ENGINE ---
+const TREE_STORAGE_KEY = 'educrate_tree_cache_v2';
+const TREE_STORAGE_TTL = 10 * 60 * 1000; // 10 minutes
+const FOLDER_STORAGE_PREFIX = 'educrate_folder_cache_v2_';
+const FOLDER_STORAGE_TTL = 5 * 60 * 1000; // 5 minutes
+const searchCache = new Map();
+const MAX_SEARCH_CACHE = 50;
+
+function getStorageTree() {
+    try {
+        const raw = sessionStorage.getItem(TREE_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (Date.now() - parsed.timestamp < TREE_STORAGE_TTL && parsed.data) {
+            return parsed.data;
+        }
+    } catch (_) {}
+    return null;
+}
+
+function setStorageTree(data) {
+    try {
+        sessionStorage.setItem(TREE_STORAGE_KEY, JSON.stringify({ timestamp: Date.now(), data }));
+    } catch (_) {}
+}
+
+function getStorageFolder(id) {
+    try {
+        const raw = sessionStorage.getItem(FOLDER_STORAGE_PREFIX + id);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (Date.now() - parsed.timestamp < FOLDER_STORAGE_TTL && parsed.data) {
+            return parsed.data;
+        }
+    } catch (_) {}
+    return null;
+}
+
+function setStorageFolder(id, data) {
+    try {
+        sessionStorage.setItem(FOLDER_STORAGE_PREFIX + id, JSON.stringify({ timestamp: Date.now(), data }));
+    } catch (_) {}
+}
+
+function removeStorageFolder(id) {
+    try {
+        sessionStorage.removeItem(FOLDER_STORAGE_PREFIX + id);
+    } catch (_) {}
+}
+
+function getCachedSearchResults(query) {
+    return searchCache.get(query.toLowerCase()) || null;
+}
+
+function setCachedSearchResults(query, results) {
+    if (searchCache.size >= MAX_SEARCH_CACHE) {
+        const firstKey = searchCache.keys().next().value;
+        searchCache.delete(firstKey);
+    }
+    searchCache.set(query.toLowerCase(), results);
+}
 
 function updateLcpImagePreload(url) {
     if (!elements.lcpImagePreload) return;
@@ -196,7 +257,7 @@ function setupEventListeners() {
             elements.sidebarOverlay.classList.remove('hidden');
         } else {
             // On desktop, click the first folder automatically
-            const firstFolder = elements.foldersList.querySelector('.folder-btn');
+            const firstFolder = elements.foldersList.querySelector('.tree-toggle');
             if (firstFolder) firstFolder.click();
         }
     }, { passive: true });
@@ -384,11 +445,21 @@ async function loadFolderTree() {
         startFolderPolling();
         return;
     }
+    const storedTree = getStorageTree();
+    if (storedTree) {
+        cachedTree = storedTree;
+        renderFolderTree(cachedTree);
+        startFolderPolling();
+        // Background revalidation
+        pollFolderTree();
+        return;
+    }
     try {
         const res = await fetch(API_BASE + '/tree');
         const data = await res.json();
         if (data.success) {
             cachedTree = data.data;
+            setStorageTree(cachedTree);
             renderFolderTree(cachedTree);
             startFolderPolling();
         }
@@ -415,6 +486,7 @@ async function hydrateFromUrl() {
         let targetFile = cache.files.find(f => f.id === fileId);
         if (!targetFile) {
             delete cachedFiles[folderId];
+            removeStorageFolder(folderId);
             await selectFolder(folderId, 'Loading...', { skipUrlSync: true });
             const refreshed = cachedFiles[folderId] || { files: [] };
             targetFile = refreshed.files.find(f => f.id === fileId);
@@ -450,6 +522,7 @@ async function pollFolderTree() {
         if (data.success) {
             if (JSON.stringify(cachedTree) !== JSON.stringify(data.data)) {
                 cachedTree = data.data;
+                setStorageTree(cachedTree);
                 renderFolderTree(cachedTree);
             }
         }
@@ -471,6 +544,7 @@ async function pollFiles() {
 
             if (!areFilesEqual(currentCache.files, newFiles) || !areFoldersEqual(currentCache.folders, newFolders)) {
                 cachedFiles[currentFolderId] = { folders: newFolders, files: newFiles, breadcrumbs };
+                setStorageFolder(currentFolderId, cachedFiles[currentFolderId]);
                 if (newFiles.length > 0 || newFolders.length > 0) {
                     renderFolderContents(newFolders, sortFilesByModified(newFiles));
                     elements.emptyState.classList.add('hidden');
@@ -733,7 +807,10 @@ async function selectFolder(id, name, options = {}) {
 
     renderSkeletons();
 
-    if (cachedFiles[id]) {
+    if (cachedFiles[id] || getStorageFolder(id)) {
+        if (!cachedFiles[id]) {
+            cachedFiles[id] = getStorageFolder(id);
+        }
         const cache = cachedFiles[id];
         elements.contentTitle.textContent = cache.folderName || name;
         document.title = `${cache.folderName || name} | EduCrate CS2 Notes`;
@@ -750,6 +827,7 @@ async function selectFolder(id, name, options = {}) {
         if (data.success) {
             const { folders, files, breadcrumbs, folderName } = data.data;
             cachedFiles[id] = { folders, files, breadcrumbs, folderName };
+            setStorageFolder(id, cachedFiles[id]);
             if (id === currentFolderId) {
                 elements.contentTitle.textContent = folderName;
                 document.title = `${folderName} | EduCrate CS2 Notes`;
@@ -867,6 +945,7 @@ async function performFullRefresh() {
         const folderData = await folderRes.json();
         if (folderData.success) {
             cachedTree = folderData.data;
+            setStorageTree(cachedTree);
             renderFolderTree(cachedTree);
         }
     } catch (e) { console.error('Refresh folders error:', e); }
@@ -874,6 +953,7 @@ async function performFullRefresh() {
     // Refresh current folder's files if viewing one
     if (currentFolderId) {
         delete cachedFiles[currentFolderId];
+        removeStorageFolder(currentFolderId);
         try {
             const res = await fetch(API_BASE + '/folder-contents/' + currentFolderId, {
                 headers: { 'Cache-Control': 'no-cache' }
@@ -882,6 +962,7 @@ async function performFullRefresh() {
             if (data.success) {
                 const { folders, files, breadcrumbs, folderName } = data.data;
                 cachedFiles[currentFolderId] = { folders, files, breadcrumbs, folderName };
+                setStorageFolder(currentFolderId, cachedFiles[currentFolderId]);
                 renderFolderContents(folders, sortFilesByModified(files));
                 renderBreadcrumbs(breadcrumbs);
                 if (folders.length > 0 || files.length > 0) {
@@ -1106,7 +1187,6 @@ function openPdf(file, options = {}) {
 
     // Prefer in-app stream preview first. If it takes too long, fall back to Drive preview.
     const streamPreviewUrl = file.viewUrl || `${API_BASE}/pdf/${encodeURIComponent(file.id)}`;
-    const drivePreviewUrl = `${API_BASE}/view/${encodeURIComponent(file.id)}`;
 
     elements.pdfIframe.onerror = () => showPdfError(file);
     elements.pdfIframe.src = streamPreviewUrl;
@@ -1248,14 +1328,32 @@ function handleSearch(e) {
         elements.searchResults.classList.add('hidden');
         return;
     }
-    const debounceTime = isMobile ? 600 : 400;
+
+    // Check intermediate frontend cache first
+    const cached = getCachedSearchResults(q);
+    if (cached) {
+        if (cached.length > 0) {
+            renderSearchResults(cached);
+        } else {
+            activeSearchIndex = -1;
+            elements.searchInput.removeAttribute('aria-activedescendant');
+            elements.searchInput.setAttribute('aria-expanded', 'false');
+            elements.searchResults.classList.add('hidden');
+        }
+        return;
+    }
+
+    const debounceTime = isMobile ? 500 : 350;
     searchTimeout = setTimeout(async () => {
         try {
             const res = await fetch(API_BASE + '/search?q=' + encodeURIComponent(q));
             const data = await res.json();
             if (data.success && data.data.length > 0) {
-                renderSearchResults(data.data.sort(naturalSort));
+                const sorted = data.data.sort(naturalSort);
+                setCachedSearchResults(q, sorted);
+                renderSearchResults(sorted);
             } else {
+                setCachedSearchResults(q, []);
                 activeSearchIndex = -1;
                 elements.searchInput.removeAttribute('aria-activedescendant');
                 elements.searchInput.setAttribute('aria-expanded', 'false');

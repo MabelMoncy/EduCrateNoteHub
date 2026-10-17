@@ -52,7 +52,7 @@
       ]
     },
     {
-      "source": "/og-image.jpg",
+      "source": "/(og-image.jpg|logo.png|logo.webp|apple-touch-icon.png|android-chrome-.*\\.png|favicon-.*\\.png|favicon.ico)",
       "headers": [
         {
           "key": "Cache-Control",
