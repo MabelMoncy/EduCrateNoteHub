@@ -19,7 +19,15 @@ let resizeTimeout;
 window.addEventListener('resize', () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
+        const wasMobile = isMobile;
         isMobile = window.innerWidth < 768;
+        if (wasMobile && !isMobile) {
+            elements.logoContainer.classList.remove('hidden');
+            elements.rightNav.classList.remove('hidden');
+            elements.mobileSearchTrigger.classList.remove('hidden');
+            elements.searchBarContainer.classList.remove('block');
+            elements.closeSearchBtn.classList.add('hidden');
+        }
     }, 150);
 }, { passive: true });
 
@@ -65,8 +73,6 @@ const elements = {
     searchInput: document.getElementById('searchInput'),
     searchResults: document.getElementById('searchResults'),
     browseSubjectsBtn: document.getElementById('browseSubjectsBtn'),
-    pullRefreshIndicator: document.getElementById('pullRefreshIndicator'),
-    pullRefreshText: document.getElementById('pullRefreshText'),
     themeColorMeta: document.querySelector('meta[name="theme-color"]'),
     lcpImagePreload: document.getElementById('lcpImagePreload'),
     sortContainer: document.getElementById('sortContainer'),
@@ -268,9 +274,6 @@ function setupEventListeners() {
     if (elements.sortSelect) {
         elements.sortSelect.addEventListener('change', handleSortChange, { passive: true });
     }
-
-    // Pull-to-refresh for mobile
-    setupPullToRefresh();
 
     // Keyboard shortcut to close PDF viewer
     document.addEventListener('keydown', (e) => {
@@ -868,118 +871,8 @@ async function selectFolder(id, name, options = {}) {
     }
 }
 
-// --- PULL-TO-REFRESH ENGINE ---
-function setupPullToRefresh() {
-    let startY = 0;
-    let currentY = 0;
-    let pulling = false;
-    let isRefreshing = false;
-    const PULL_THRESHOLD = 80;
-    const mainEl = document.querySelector('main');
-
-    mainEl.addEventListener('touchstart', (e) => {
-        // Only activate when scrolled to top and not in modal
-        if (window.scrollY > 5 || isRefreshing || !elements.pdfModal.classList.contains('hidden')) return;
-        startY = e.touches[0].clientY;
-        pulling = true;
-    }, { passive: true });
-
-    mainEl.addEventListener('touchmove', (e) => {
-        if (!pulling || isRefreshing) return;
-        currentY = e.touches[0].clientY;
-        const pullDistance = currentY - startY;
-
-        if (pullDistance < 0) { pulling = false; return; }
-
-        // Show indicator proportional to pull distance
-        const progress = Math.min(pullDistance / PULL_THRESHOLD, 1);
-        const translateY = Math.min(pullDistance * 0.5, 50) - 60;
-        elements.pullRefreshIndicator.style.transform = `translateX(-50%) translateY(${translateY}px)`;
-        elements.pullRefreshIndicator.classList.add('visible');
-
-        if (progress >= 1) {
-            elements.pullRefreshText.textContent = 'Release to refresh';
-        } else {
-            elements.pullRefreshText.textContent = 'Pull to refresh';
-        }
-    }, { passive: true });
-
-    mainEl.addEventListener('touchend', async () => {
-        if (!pulling || isRefreshing) return;
-        const pullDistance = currentY - startY;
-        pulling = false;
-
-        if (pullDistance >= PULL_THRESHOLD) {
-            // Trigger refresh
-            isRefreshing = true;
-            elements.pullRefreshIndicator.classList.add('refreshing');
-            elements.pullRefreshText.textContent = 'Refreshing...';
-            elements.pullRefreshIndicator.style.transform = 'translateX(-50%) translateY(0px)';
-
-            await performFullRefresh();
-
-            // Delay hiding for visual feedback
-            setTimeout(() => {
-                isRefreshing = false;
-                hideRefreshIndicator();
-            }, 500);
-        } else {
-            hideRefreshIndicator();
-        }
-
-        startY = 0;
-        currentY = 0;
-    }, { passive: true });
-}
-
-function hideRefreshIndicator() {
-    elements.pullRefreshIndicator.classList.remove('visible', 'refreshing');
-    elements.pullRefreshIndicator.style.transform = 'translateX(-50%) translateY(-60px)';
-    elements.pullRefreshText.textContent = 'Pull to refresh';
-}
-
-async function performFullRefresh() {
-    // Refresh folders
-    try {
-        const folderRes = await fetch(API_BASE + '/tree', { headers: { 'Cache-Control': 'no-cache' } });
-        const folderData = await folderRes.json();
-        if (folderData.success) {
-            cachedTree = folderData.data;
-            setStorageTree(cachedTree);
-            renderFolderTree(cachedTree);
-        }
-    } catch (e) { console.error('Refresh folders error:', e); }
-
-    // Refresh current folder's files if viewing one
-    if (currentFolderId) {
-        delete cachedFiles[currentFolderId];
-        removeStorageFolder(currentFolderId);
-        try {
-            const res = await fetch(API_BASE + '/folder-contents/' + currentFolderId, {
-                headers: { 'Cache-Control': 'no-cache' }
-            });
-            const data = await res.json();
-            if (data.success) {
-                const { folders, files, breadcrumbs, folderName } = data.data;
-                cachedFiles[currentFolderId] = { folders, files, breadcrumbs, folderName };
-                setStorageFolder(currentFolderId, cachedFiles[currentFolderId]);
-                renderFolderContents(folders, sortFilesByModified(files));
-                renderBreadcrumbs(breadcrumbs);
-                if (folders.length > 0 || files.length > 0) {
-                    elements.emptyState.classList.add('hidden');
-                } else {
-                    elements.filesGrid.innerHTML = '';
-                    elements.emptyState.classList.remove('hidden');
-                }
-            }
-        } catch (e) {
-            console.error('Refresh files error:', e);
-        }
-    }
-}
-
 function renderSkeletons() {
-    const skeletonCount = isMobile ? 2 : 3;
+    const skeletonCount = isMobile ? 4 : 6;
     elements.filesGrid.innerHTML = Array.from({ length: skeletonCount }, () =>
         '<div class="file-skeleton p-3 sm:p-4">' +
         '<div class="thumbnail-shell shimmer rounded-xl mb-3"></div>' +

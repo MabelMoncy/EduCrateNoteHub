@@ -112,7 +112,6 @@ body::after {
 nav,
 #sidebar,
 #searchResults,
-#pullRefreshIndicator,
 .pdf-modal-body,
 .pdf-modal-header,
 #pdfContainer {
@@ -231,6 +230,10 @@ nav {
     justify-content: center;
     transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
     width: 2.5rem;
+}
+
+.icon-btn.hidden {
+    display: none !important;
 }
 
 .icon-btn:hover,
@@ -546,6 +549,41 @@ nav {
     background: rgba(11, 17, 48, 0.62) !important;
 }
 
+.thumbnail-shell {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+}
+
+.shimmer {
+    position: relative;
+    overflow: hidden;
+    background-color: rgba(226, 232, 240, 0.7);
+}
+
+.shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.75) 50%, transparent 100%);
+    animation: shim 1.5s infinite;
+    will-change: transform;
+}
+
+@keyframes shim {
+    to {
+        transform: translateX(100%);
+    }
+}
+
+.dark .shimmer {
+    background-color: rgba(19, 27, 74, 0.7);
+}
+
+.dark .shimmer::after {
+    background: linear-gradient(90deg, transparent 0%, rgba(123, 92, 255, 0.28) 50%, transparent 100%);
+}
+
 .breadcrumb-trail {
     margin-bottom: 0.75rem;
 }
@@ -758,7 +796,6 @@ nav {
 }
 
 #welcomeState p,
-#pullRefreshText,
 #emptyState,
 .text-slate-500,
 .dark .text-slate-400,
@@ -872,7 +909,8 @@ html:not(.dark) #searchInput::placeholder {
 }
 
 .note-card,
-.folder-card {
+.folder-card,
+.file-skeleton {
     animation: cardFadeIn 150ms ease both;
 }
 
@@ -1105,7 +1143,6 @@ html:not(.dark) #searchInput::placeholder {
     }
 
     .shimmer,
-    #pullRefreshIndicator.refreshing svg,
     body::before,
     body::after,
     #sidebar::before,
