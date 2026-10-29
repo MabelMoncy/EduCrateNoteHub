@@ -19,7 +19,15 @@ let resizeTimeout;
 window.addEventListener('resize', () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
+        const wasMobile = isMobile;
         isMobile = window.innerWidth < 768;
+        if (wasMobile && !isMobile) {
+            elements.logoContainer.classList.remove('hidden');
+            elements.rightNav.classList.remove('hidden');
+            elements.mobileSearchTrigger.classList.remove('hidden');
+            elements.searchBarContainer.classList.remove('block');
+            elements.closeSearchBtn.classList.add('hidden');
+        }
     }, 150);
 }, { passive: true });
 
@@ -55,7 +63,6 @@ const elements = {
     pdfTitle: document.getElementById('pdfTitle'),
     pdfLoading: document.getElementById('pdfLoading'),
     pdfIframe: document.getElementById('pdfIframe'),
-    pdfContainer: document.getElementById('pdfContainer'),
     closePdfBtn: document.getElementById('closePdfBtn'),
     pdfDownload: document.getElementById('pdfDownload'),
     logoContainer: document.getElementById('logoContainer'),
@@ -66,13 +73,73 @@ const elements = {
     searchInput: document.getElementById('searchInput'),
     searchResults: document.getElementById('searchResults'),
     browseSubjectsBtn: document.getElementById('browseSubjectsBtn'),
-    pullRefreshIndicator: document.getElementById('pullRefreshIndicator'),
-    pullRefreshText: document.getElementById('pullRefreshText'),
     themeColorMeta: document.querySelector('meta[name="theme-color"]'),
     lcpImagePreload: document.getElementById('lcpImagePreload'),
     sortContainer: document.getElementById('sortContainer'),
     sortSelect: document.getElementById('sortSelect')
 };
+
+// --- INTERMEDIATE & CLIENT-SIDE CACHING ENGINE ---
+const TREE_STORAGE_KEY = 'educrate_tree_cache_v2';
+const TREE_STORAGE_TTL = 10 * 60 * 1000; // 10 minutes
+const FOLDER_STORAGE_PREFIX = 'educrate_folder_cache_v2_';
+const FOLDER_STORAGE_TTL = 5 * 60 * 1000; // 5 minutes
+const searchCache = new Map();
+const MAX_SEARCH_CACHE = 50;
+
+function getStorageTree() {
+    try {
+        const raw = sessionStorage.getItem(TREE_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (Date.now() - parsed.timestamp < TREE_STORAGE_TTL && parsed.data) {
+            return parsed.data;
+        }
+    } catch (_) {}
+    return null;
+}
+
+function setStorageTree(data) {
+    try {
+        sessionStorage.setItem(TREE_STORAGE_KEY, JSON.stringify({ timestamp: Date.now(), data }));
+    } catch (_) {}
+}
+
+function getStorageFolder(id) {
+    try {
+        const raw = sessionStorage.getItem(FOLDER_STORAGE_PREFIX + id);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (Date.now() - parsed.timestamp < FOLDER_STORAGE_TTL && parsed.data) {
+            return parsed.data;
+        }
+    } catch (_) {}
+    return null;
+}
+
+function setStorageFolder(id, data) {
+    try {
+        sessionStorage.setItem(FOLDER_STORAGE_PREFIX + id, JSON.stringify({ timestamp: Date.now(), data }));
+    } catch (_) {}
+}
+
+function removeStorageFolder(id) {
+    try {
+        sessionStorage.removeItem(FOLDER_STORAGE_PREFIX + id);
+    } catch (_) {}
+}
+
+function getCachedSearchResults(query) {
+    return searchCache.get(query.toLowerCase()) || null;
+}
+
+function setCachedSearchResults(query, results) {
+    if (searchCache.size >= MAX_SEARCH_CACHE) {
+        const firstKey = searchCache.keys().next().value;
+        searchCache.delete(firstKey);
+    }
+    searchCache.set(query.toLowerCase(), results);
+}
 
 function updateLcpImagePreload(url) {
     if (!elements.lcpImagePreload) return;
@@ -196,7 +263,7 @@ function setupEventListeners() {
             elements.sidebarOverlay.classList.remove('hidden');
         } else {
             // On desktop, click the first folder automatically
-            const firstFolder = elements.foldersList.querySelector('.folder-btn');
+            const firstFolder = elements.foldersList.querySelector('.tree-toggle');
             if (firstFolder) firstFolder.click();
         }
     }, { passive: true });
@@ -207,9 +274,6 @@ function setupEventListeners() {
     if (elements.sortSelect) {
         elements.sortSelect.addEventListener('change', handleSortChange, { passive: true });
     }
-
-    // Pull-to-refresh for mobile
-    setupPullToRefresh();
 
     // Keyboard shortcut to close PDF viewer
     document.addEventListener('keydown', (e) => {
@@ -384,11 +448,21 @@ async function loadFolderTree() {
         startFolderPolling();
         return;
     }
+    const storedTree = getStorageTree();
+    if (storedTree) {
+        cachedTree = storedTree;
+        renderFolderTree(cachedTree);
+        startFolderPolling();
+        // Background revalidation
+        pollFolderTree();
+        return;
+    }
     try {
         const res = await fetch(API_BASE + '/tree');
         const data = await res.json();
         if (data.success) {
             cachedTree = data.data;
+            setStorageTree(cachedTree);
             renderFolderTree(cachedTree);
             startFolderPolling();
         }
@@ -415,6 +489,7 @@ async function hydrateFromUrl() {
         let targetFile = cache.files.find(f => f.id === fileId);
         if (!targetFile) {
             delete cachedFiles[folderId];
+            removeStorageFolder(folderId);
             await selectFolder(folderId, 'Loading...', { skipUrlSync: true });
             const refreshed = cachedFiles[folderId] || { files: [] };
             targetFile = refreshed.files.find(f => f.id === fileId);
@@ -450,6 +525,7 @@ async function pollFolderTree() {
         if (data.success) {
             if (JSON.stringify(cachedTree) !== JSON.stringify(data.data)) {
                 cachedTree = data.data;
+                setStorageTree(cachedTree);
                 renderFolderTree(cachedTree);
             }
         }
@@ -471,6 +547,7 @@ async function pollFiles() {
 
             if (!areFilesEqual(currentCache.files, newFiles) || !areFoldersEqual(currentCache.folders, newFolders)) {
                 cachedFiles[currentFolderId] = { folders: newFolders, files: newFiles, breadcrumbs };
+                setStorageFolder(currentFolderId, cachedFiles[currentFolderId]);
                 if (newFiles.length > 0 || newFolders.length > 0) {
                     renderFolderContents(newFolders, sortFilesByModified(newFiles));
                     elements.emptyState.classList.add('hidden');
@@ -733,7 +810,10 @@ async function selectFolder(id, name, options = {}) {
 
     renderSkeletons();
 
-    if (cachedFiles[id]) {
+    if (cachedFiles[id] || getStorageFolder(id)) {
+        if (!cachedFiles[id]) {
+            cachedFiles[id] = getStorageFolder(id);
+        }
         const cache = cachedFiles[id];
         elements.contentTitle.textContent = cache.folderName || name;
         document.title = `${cache.folderName || name} | EduCrate CS2 Notes`;
@@ -750,6 +830,7 @@ async function selectFolder(id, name, options = {}) {
         if (data.success) {
             const { folders, files, breadcrumbs, folderName } = data.data;
             cachedFiles[id] = { folders, files, breadcrumbs, folderName };
+            setStorageFolder(id, cachedFiles[id]);
             if (id === currentFolderId) {
                 elements.contentTitle.textContent = folderName;
                 document.title = `${folderName} | EduCrate CS2 Notes`;
@@ -790,115 +871,8 @@ async function selectFolder(id, name, options = {}) {
     }
 }
 
-// --- PULL-TO-REFRESH ENGINE ---
-function setupPullToRefresh() {
-    let startY = 0;
-    let currentY = 0;
-    let pulling = false;
-    let isRefreshing = false;
-    const PULL_THRESHOLD = 80;
-    const mainEl = document.querySelector('main');
-
-    mainEl.addEventListener('touchstart', (e) => {
-        // Only activate when scrolled to top and not in modal
-        if (window.scrollY > 5 || isRefreshing || !elements.pdfModal.classList.contains('hidden')) return;
-        startY = e.touches[0].clientY;
-        pulling = true;
-    }, { passive: true });
-
-    mainEl.addEventListener('touchmove', (e) => {
-        if (!pulling || isRefreshing) return;
-        currentY = e.touches[0].clientY;
-        const pullDistance = currentY - startY;
-
-        if (pullDistance < 0) { pulling = false; return; }
-
-        // Show indicator proportional to pull distance
-        const progress = Math.min(pullDistance / PULL_THRESHOLD, 1);
-        const translateY = Math.min(pullDistance * 0.5, 50) - 60;
-        elements.pullRefreshIndicator.style.transform = `translateX(-50%) translateY(${translateY}px)`;
-        elements.pullRefreshIndicator.classList.add('visible');
-
-        if (progress >= 1) {
-            elements.pullRefreshText.textContent = 'Release to refresh';
-        } else {
-            elements.pullRefreshText.textContent = 'Pull to refresh';
-        }
-    }, { passive: true });
-
-    mainEl.addEventListener('touchend', async () => {
-        if (!pulling || isRefreshing) return;
-        const pullDistance = currentY - startY;
-        pulling = false;
-
-        if (pullDistance >= PULL_THRESHOLD) {
-            // Trigger refresh
-            isRefreshing = true;
-            elements.pullRefreshIndicator.classList.add('refreshing');
-            elements.pullRefreshText.textContent = 'Refreshing...';
-            elements.pullRefreshIndicator.style.transform = 'translateX(-50%) translateY(0px)';
-
-            await performFullRefresh();
-
-            // Delay hiding for visual feedback
-            setTimeout(() => {
-                isRefreshing = false;
-                hideRefreshIndicator();
-            }, 500);
-        } else {
-            hideRefreshIndicator();
-        }
-
-        startY = 0;
-        currentY = 0;
-    }, { passive: true });
-}
-
-function hideRefreshIndicator() {
-    elements.pullRefreshIndicator.classList.remove('visible', 'refreshing');
-    elements.pullRefreshIndicator.style.transform = 'translateX(-50%) translateY(-60px)';
-    elements.pullRefreshText.textContent = 'Pull to refresh';
-}
-
-async function performFullRefresh() {
-    // Refresh folders
-    try {
-        const folderRes = await fetch(API_BASE + '/tree', { headers: { 'Cache-Control': 'no-cache' } });
-        const folderData = await folderRes.json();
-        if (folderData.success) {
-            cachedTree = folderData.data;
-            renderFolderTree(cachedTree);
-        }
-    } catch (e) { console.error('Refresh folders error:', e); }
-
-    // Refresh current folder's files if viewing one
-    if (currentFolderId) {
-        delete cachedFiles[currentFolderId];
-        try {
-            const res = await fetch(API_BASE + '/folder-contents/' + currentFolderId, {
-                headers: { 'Cache-Control': 'no-cache' }
-            });
-            const data = await res.json();
-            if (data.success) {
-                const { folders, files, breadcrumbs, folderName } = data.data;
-                cachedFiles[currentFolderId] = { folders, files, breadcrumbs, folderName };
-                renderFolderContents(folders, sortFilesByModified(files));
-                renderBreadcrumbs(breadcrumbs);
-                if (folders.length > 0 || files.length > 0) {
-                    elements.emptyState.classList.add('hidden');
-                } else {
-                    elements.filesGrid.innerHTML = '';
-                    elements.emptyState.classList.remove('hidden');
-                }
-            }
-        } catch (e) {
-            console.error('Refresh files error:', e);
-        }
-    }
-}
-
 function renderSkeletons() {
-    const skeletonCount = isMobile ? 2 : 3;
+    const skeletonCount = isMobile ? 4 : 6;
     elements.filesGrid.innerHTML = Array.from({ length: skeletonCount }, () =>
         '<div class="file-skeleton p-3 sm:p-4">' +
         '<div class="thumbnail-shell shimmer rounded-xl mb-3"></div>' +
@@ -1106,7 +1080,6 @@ function openPdf(file, options = {}) {
 
     // Prefer in-app stream preview first. If it takes too long, fall back to Drive preview.
     const streamPreviewUrl = file.viewUrl || `${API_BASE}/pdf/${encodeURIComponent(file.id)}`;
-    const drivePreviewUrl = `${API_BASE}/view/${encodeURIComponent(file.id)}`;
 
     elements.pdfIframe.onerror = () => showPdfError(file);
     elements.pdfIframe.src = streamPreviewUrl;
@@ -1248,14 +1221,32 @@ function handleSearch(e) {
         elements.searchResults.classList.add('hidden');
         return;
     }
-    const debounceTime = isMobile ? 600 : 400;
+
+    // Check intermediate frontend cache first
+    const cached = getCachedSearchResults(q);
+    if (cached) {
+        if (cached.length > 0) {
+            renderSearchResults(cached);
+        } else {
+            activeSearchIndex = -1;
+            elements.searchInput.removeAttribute('aria-activedescendant');
+            elements.searchInput.setAttribute('aria-expanded', 'false');
+            elements.searchResults.classList.add('hidden');
+        }
+        return;
+    }
+
+    const debounceTime = isMobile ? 500 : 350;
     searchTimeout = setTimeout(async () => {
         try {
             const res = await fetch(API_BASE + '/search?q=' + encodeURIComponent(q));
             const data = await res.json();
             if (data.success && data.data.length > 0) {
-                renderSearchResults(data.data.sort(naturalSort));
+                const sorted = data.data.sort(naturalSort);
+                setCachedSearchResults(q, sorted);
+                renderSearchResults(sorted);
             } else {
+                setCachedSearchResults(q, []);
                 activeSearchIndex = -1;
                 elements.searchInput.removeAttribute('aria-activedescendant');
                 elements.searchInput.setAttribute('aria-expanded', 'false');
