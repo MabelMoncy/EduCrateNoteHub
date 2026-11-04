@@ -206,7 +206,7 @@ app.use(helmet({
             styleSrc: ["'self'", "'unsafe-inline'"],
             imgSrc: ["'self'", 'data:', 'https:'],
             connectSrc: ["'self'", 'https://*.googleapis.com', 'https://securetoken.googleapis.com'],
-            frameSrc: ['https://drive.google.com', 'https://accounts.google.com'],
+            frameSrc: ['https://drive.google.com', 'https://accounts.google.com', 'https://www.youtube.com', 'https://youtube.com'],
             objectSrc: ["'none'"],
             upgradeInsecureRequests: []
         }
