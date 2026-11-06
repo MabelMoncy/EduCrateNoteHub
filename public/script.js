@@ -78,7 +78,24 @@ const elements = {
     sortContainer: document.getElementById('sortContainer'),
     sortSelect: document.getElementById('sortSelect'),
     backToHomeBtn: document.getElementById('backToHomeBtn'),
-    navHomeBtn: document.getElementById('navHomeBtn')
+    navHomeBtn: document.getElementById('navHomeBtn'),
+    openFeedbackBtn: document.getElementById('openFeedbackBtn'),
+    feedbackModal: document.getElementById('feedbackModal'),
+    feedbackBackdrop: document.getElementById('feedbackBackdrop'),
+    closeFeedbackBtn: document.getElementById('closeFeedbackBtn'),
+    feedbackForm: document.getElementById('feedbackForm'),
+    feedbackName: document.getElementById('feedbackName'),
+    feedbackEmail: document.getElementById('feedbackEmail'),
+    feedbackCategoryBtn: document.getElementById('feedbackCategoryBtn'),
+    feedbackCategorySelected: document.getElementById('feedbackCategorySelected'),
+    feedbackCategoryChevron: document.getElementById('feedbackCategoryChevron'),
+    feedbackCategoryMenu: document.getElementById('feedbackCategoryMenu'),
+    feedbackCategory: document.getElementById('feedbackCategory'),
+    feedbackMessage: document.getElementById('feedbackMessage'),
+    feedbackAlert: document.getElementById('feedbackAlert'),
+    feedbackSubmitBtn: document.getElementById('feedbackSubmitBtn'),
+    feedbackSubmitIcon: document.getElementById('feedbackSubmitIcon'),
+    feedbackSubmitText: document.getElementById('feedbackSubmitText')
 };
 
 // --- INTERMEDIATE & CLIENT-SIDE CACHING ENGINE ---
@@ -282,10 +299,13 @@ function setupEventListeners() {
         elements.sortSelect.addEventListener('change', handleSortChange, { passive: true });
     }
 
-    // Keyboard shortcut to close PDF viewer
+    // Keyboard shortcut to close PDF or Feedback viewer
     document.addEventListener('keydown', (e) => {
         if (!elements.pdfModal.classList.contains('hidden') && e.key === 'Escape') {
             closePdf();
+        }
+        if (elements.feedbackModal && !elements.feedbackModal.classList.contains('hidden') && e.key === 'Escape') {
+            closeFeedbackModal();
         }
 
         if (
@@ -394,13 +414,55 @@ function setupEventListeners() {
         });
     }
 
+    // Delegated click handler for reliable home navigation
+    document.addEventListener('click', (e) => {
+        const homeBtn = e.target.closest('#backToHomeBtn, #navHomeBtn, [data-action="go-home"]');
+        if (homeBtn) {
+            e.preventDefault();
+            goHome();
+        }
+    });
+
     if (elements.logoContainer) {
         elements.logoContainer.addEventListener('click', (e) => {
             e.preventDefault();
             goHome();
         });
     }
+
+    // Feedback Modal Event Listeners
+    if (elements.openFeedbackBtn) {
+        elements.openFeedbackBtn.addEventListener('click', openFeedbackModal);
+    }
+    if (elements.closeFeedbackBtn) {
+        elements.closeFeedbackBtn.addEventListener('click', closeFeedbackModal);
+    }
+    if (elements.feedbackBackdrop) {
+        elements.feedbackBackdrop.addEventListener('click', closeFeedbackModal);
+    }
+    if (elements.feedbackCategoryBtn) {
+        elements.feedbackCategoryBtn.addEventListener('click', toggleFeedbackCategoryMenu);
+    }
+    if (elements.feedbackCategoryMenu) {
+        elements.feedbackCategoryMenu.addEventListener('click', handleFeedbackCategorySelect);
+    }
+    if (elements.feedbackForm) {
+        elements.feedbackForm.addEventListener('submit', handleFeedbackSubmit);
+    }
+
+    // Close category dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (elements.feedbackCategoryMenu && !elements.feedbackCategoryMenu.classList.contains('hidden')) {
+            if (elements.feedbackCategoryBtn && !elements.feedbackCategoryBtn.contains(e.target) && !elements.feedbackCategoryMenu.contains(e.target)) {
+                elements.feedbackCategoryMenu.classList.add('hidden');
+                if (elements.feedbackCategoryChevron) elements.feedbackCategoryChevron.classList.remove('rotate-180');
+                if (elements.feedbackCategoryBtn) elements.feedbackCategoryBtn.setAttribute('aria-expanded', 'false');
+            }
+        }
+    });
 }
+
+window.goHome = goHome;
 
 function goHome(pushState = true) {
     if (!elements.pdfModal.classList.contains('hidden')) {
@@ -1421,5 +1483,185 @@ function handleSearchResultClick(e) {
             openPdf(file);
         };
         openWithFolder().catch(console.error);
+    }
+}
+
+// --- SUPPORT & FEEDBACK ENGINE ---
+function openFeedbackModal() {
+    if (elements.sidebar && !elements.sidebar.classList.contains('-translate-x-full')) {
+        closeSidebar();
+    }
+    if (elements.feedbackModal) {
+        elements.feedbackModal.classList.remove('hidden');
+        document.body.classList.add('modal-open');
+        clearFeedbackAlert();
+    }
+}
+
+function closeFeedbackModal() {
+    if (elements.feedbackModal) {
+        elements.feedbackModal.classList.add('hidden');
+        if (elements.pdfModal && elements.pdfModal.classList.contains('hidden')) {
+            document.body.classList.remove('modal-open');
+        }
+        if (elements.feedbackCategoryMenu) {
+            elements.feedbackCategoryMenu.classList.add('hidden');
+            if (elements.feedbackCategoryChevron) elements.feedbackCategoryChevron.classList.remove('rotate-180');
+            if (elements.feedbackCategoryBtn) elements.feedbackCategoryBtn.setAttribute('aria-expanded', 'false');
+        }
+    }
+}
+
+function toggleFeedbackCategoryMenu(e) {
+    if (e) e.stopPropagation();
+    if (!elements.feedbackCategoryMenu || !elements.feedbackCategoryBtn) return;
+    const isHidden = elements.feedbackCategoryMenu.classList.toggle('hidden');
+    const isExpanded = !isHidden;
+    elements.feedbackCategoryBtn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+    if (elements.feedbackCategoryChevron) {
+        elements.feedbackCategoryChevron.classList.toggle('rotate-180', isExpanded);
+    }
+}
+
+function handleFeedbackCategorySelect(e) {
+    const opt = e.target.closest('.feedback-option');
+    if (!opt) return;
+    e.stopPropagation();
+
+    const val = opt.dataset.value || '';
+    if (elements.feedbackCategory) elements.feedbackCategory.value = val;
+
+    if (elements.feedbackCategorySelected) {
+        elements.feedbackCategorySelected.innerHTML = opt.innerHTML;
+        elements.feedbackCategorySelected.classList.remove('text-slate-400');
+        elements.feedbackCategorySelected.classList.add('text-slate-100');
+    }
+
+    if (elements.feedbackCategoryMenu) elements.feedbackCategoryMenu.classList.add('hidden');
+    if (elements.feedbackCategoryChevron) elements.feedbackCategoryChevron.classList.remove('rotate-180');
+    if (elements.feedbackCategoryBtn) elements.feedbackCategoryBtn.setAttribute('aria-expanded', 'false');
+    clearFeedbackAlert();
+}
+
+function clearFeedbackAlert() {
+    if (elements.feedbackAlert) {
+        elements.feedbackAlert.className = 'hidden text-xs rounded-xl p-3 items-center gap-2';
+        elements.feedbackAlert.innerHTML = '';
+    }
+}
+
+function showFeedbackAlert(type, message) {
+    if (!elements.feedbackAlert) return;
+    elements.feedbackAlert.classList.remove('hidden');
+    if (type === 'success') {
+        elements.feedbackAlert.className = 'flex items-center gap-2 p-3 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-medium';
+        elements.feedbackAlert.innerHTML = '<svg class="w-4 h-4 shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>' + escapeHtml(message) + '</span>';
+    } else {
+        elements.feedbackAlert.className = 'flex items-center gap-2 p-3 rounded-xl bg-rose-950/80 border border-rose-500/40 text-rose-300 text-xs font-medium';
+        elements.feedbackAlert.innerHTML = '<svg class="w-4 h-4 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span>' + escapeHtml(message) + '</span>';
+    }
+}
+
+async function handleFeedbackSubmit(e) {
+    e.preventDefault();
+
+    const name = (elements.feedbackName ? elements.feedbackName.value : '').trim();
+    const email = (elements.feedbackEmail ? elements.feedbackEmail.value : '').trim();
+    const category = (elements.feedbackCategory ? elements.feedbackCategory.value : '').trim();
+    const message = (elements.feedbackMessage ? elements.feedbackMessage.value : '').trim();
+
+    if (!category) {
+        showFeedbackAlert('error', 'Please select a feedback category.');
+        if (elements.feedbackCategoryBtn) elements.feedbackCategoryBtn.focus();
+        return;
+    }
+
+    if (!message || message.length < 3) {
+        showFeedbackAlert('error', 'Please write a message before submitting.');
+        if (elements.feedbackMessage) elements.feedbackMessage.focus();
+        return;
+    }
+
+    const submitBtn = elements.feedbackSubmitBtn;
+    const submitText = elements.feedbackSubmitText;
+    const submitIcon = elements.feedbackSubmitIcon;
+    if (submitBtn) submitBtn.disabled = true;
+    if (submitText) submitText.textContent = 'Sending...';
+    if (submitIcon) submitIcon.classList.add('animate-spin');
+    clearFeedbackAlert();
+
+    const payload = {
+        name: name || 'EduCrate Student',
+        email: email || '',
+        category,
+        message
+    };
+
+    let isSuccess = false;
+    let feedbackMsg = '';
+
+    try {
+        const res = await fetch('/api/feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success) {
+                isSuccess = true;
+                feedbackMsg = data.message || 'Thank you! Your feedback has been sent.';
+            } else {
+                feedbackMsg = data.error || 'Failed to submit feedback.';
+            }
+        } else {
+            // Direct Web3Forms submission fallback
+            const fallbackBody = {
+                access_key: '59b7bc7b-da8b-400a-bcf1-4357d6e3e81a',
+                name: payload.name || 'EduCrate Student',
+                email: payload.email || 'no-reply@web3forms.com',
+                replyto: payload.email || 'no-reply@web3forms.com',
+                subject: '[EduCrate Feedback] ' + payload.category,
+                category: payload.category,
+                message: payload.message,
+                from_name: 'EduCrate Support & Feedback'
+            };
+
+            const fallbackRes = await fetch('https://api.web3forms.com/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(fallbackBody)
+            });
+            const fallbackData = await fallbackRes.json();
+            if (fallbackRes.ok && fallbackData.success) {
+                isSuccess = true;
+                feedbackMsg = 'Thank you! Your feedback has been sent.';
+            } else {
+                feedbackMsg = (fallbackData && fallbackData.message) || 'Submission failed. Please try again.';
+            }
+        }
+    } catch (err) {
+        console.error('Feedback submission error:', err);
+        feedbackMsg = 'Network error. Please check your connection and try again.';
+    }
+
+    if (submitBtn) submitBtn.disabled = false;
+    if (submitText) submitText.textContent = 'Send Feedback';
+    if (submitIcon) submitIcon.classList.remove('animate-spin');
+
+    if (isSuccess) {
+        showFeedbackAlert('success', feedbackMsg);
+        if (elements.feedbackForm) elements.feedbackForm.reset();
+        if (elements.feedbackCategory) elements.feedbackCategory.value = '';
+        if (elements.feedbackCategorySelected) {
+            elements.feedbackCategorySelected.textContent = 'Select a category...';
+            elements.feedbackCategorySelected.className = 'flex items-center gap-2 truncate text-slate-400';
+        }
+        setTimeout(() => {
+            closeFeedbackModal();
+        }, 1800);
+    } else {
+        showFeedbackAlert('error', feedbackMsg);
     }
 }
