@@ -76,7 +76,9 @@ const elements = {
     themeColorMeta: document.querySelector('meta[name="theme-color"]'),
     lcpImagePreload: document.getElementById('lcpImagePreload'),
     sortContainer: document.getElementById('sortContainer'),
-    sortSelect: document.getElementById('sortSelect')
+    sortSelect: document.getElementById('sortSelect'),
+    backToHomeBtn: document.getElementById('backToHomeBtn'),
+    navHomeBtn: document.getElementById('navHomeBtn')
 };
 
 // --- INTERMEDIATE & CLIENT-SIDE CACHING ENGINE ---
@@ -339,16 +341,7 @@ function setupEventListeners() {
         if (folderId) {
             await ensureFolderSelectedById(folderId, { skipUrlSync: true });
         } else {
-            replaceUrlState(null, null);
-            currentFolderId = null;
-            currentFolderName = null;
-            updateActiveFolderButton();
-            stopFilePolling();
-            setSortVisibility(false);
-            elements.contentHeader.classList.add('hidden');
-            elements.filesGrid.innerHTML = '';
-            elements.emptyState.classList.add('hidden');
-            elements.welcomeState.classList.remove('hidden');
+            goHome(false);
         }
     });
 
@@ -372,11 +365,59 @@ function setupEventListeners() {
     if (breadcrumbTrail) {
         breadcrumbTrail.addEventListener('click', (e) => {
             const item = e.target.closest('.breadcrumb-item');
-            if (item && item.dataset.folderId) {
-                selectFolder(item.dataset.folderId, item.dataset.folderName);
+            if (item) {
+                if (item.dataset.home === 'true') {
+                    goHome();
+                } else if (item.dataset.folderId) {
+                    selectFolder(item.dataset.folderId, item.dataset.folderName);
+                }
             }
         }, { passive: true });
     }
+
+    if (elements.backToHomeBtn) {
+        elements.backToHomeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            goHome();
+        });
+    }
+
+    if (elements.navHomeBtn) {
+        elements.navHomeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            goHome();
+        });
+    }
+
+    const logoLink = elements.logoContainer ? elements.logoContainer.querySelector('a') : null;
+    if (logoLink) {
+        logoLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            goHome();
+        });
+    }
+}
+
+function goHome(pushState = true) {
+    if (!elements.pdfModal.classList.contains('hidden')) {
+        closePdf(true);
+    }
+    if (pushState) {
+        pushUrlState(null, null);
+    } else {
+        replaceUrlState(null, null);
+    }
+    currentFolderId = null;
+    currentFolderName = null;
+    updateActiveFolderButton();
+    stopFilePolling();
+    setSortVisibility(false);
+    elements.contentHeader.classList.add('hidden');
+    elements.filesGrid.innerHTML = '';
+    elements.emptyState.classList.add('hidden');
+    elements.welcomeState.classList.remove('hidden');
+    document.title = 'EduCrate | CS2 Notes';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function closeSidebar() {
@@ -895,8 +936,10 @@ function renderBreadcrumbs(breadcrumbs) {
     const nav = document.getElementById('breadcrumbTrail');
     if (!nav) return;
 
+    const homeCrumb = '<span class="breadcrumb-item cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 font-semibold" data-home="true">Home</span>';
+
     if (!breadcrumbs || breadcrumbs.length === 0) {
-        nav.innerHTML = '';
+        nav.innerHTML = homeCrumb;
         return;
     }
 
@@ -905,11 +948,11 @@ function renderBreadcrumbs(breadcrumbs) {
         if (isLast) {
             return '<span class="breadcrumb-item cursor-default text-primary-600 dark:text-primary-400 font-bold">' + escapeHtml(crumb.name) + '</span>';
         }
-        return '<span class="breadcrumb-item" data-folder-id="' + escapeHtml(crumb.id) + '" data-folder-name="' + escapeHtml(crumb.name) + '">' + escapeHtml(crumb.name) + '</span>' +
+        return '<span class="breadcrumb-item cursor-pointer hover:text-primary-600 dark:hover:text-primary-400" data-folder-id="' + escapeHtml(crumb.id) + '" data-folder-name="' + escapeHtml(crumb.name) + '">' + escapeHtml(crumb.name) + '</span>' +
             '<span class="breadcrumb-separator">›</span>';
     }).join('');
 
-    nav.innerHTML = html;
+    nav.innerHTML = homeCrumb + '<span class="breadcrumb-separator">›</span>' + html;
 
     // SEO JSON-LD Breadcrumbs
     let ldScript = document.getElementById('breadcrumb-ld');
@@ -1149,18 +1192,46 @@ async function handleDownloadClick(e) {
 
     try {
         // Fetch PDF bytes through our server (bypasses Google account picker on mobile)
-        const res = await fetch(API_BASE + '/download/' + fileId);
+        const res = await fetch(API_BASE + '/download/' + fileId, {
+            headers: { 'Accept': 'application/json, application/pdf, */*' }
+        });
         const contentType = (res.headers.get('content-type') || '').toLowerCase();
+
+        // Check for JSON response (either oversized file or API error)
+        if (contentType.includes('application/json')) {
+            const data = await res.json();
+            if (data && data.oversized && (data.downloadUrl || data.fallbackUrl)) {
+                // Large file exceeds serverless function payload limit (6MB Lambda limit):
+                // Trigger direct download from Google Drive
+                const targetUrl = data.downloadUrl || data.fallbackUrl;
+                const a = document.createElement('a');
+                a.href = targetUrl;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    if (document.body.contains(a)) document.body.removeChild(a);
+                }, 100);
+                return;
+            }
+            if (!res.ok) {
+                throw new Error(data.error || data.errorMessage || 'Download failed');
+            }
+        }
 
         if (!res.ok) {
             let message = 'Download failed';
             try {
-                if (contentType.includes('application/json')) {
-                    const errorData = await res.json();
-                    message = errorData.error || message;
-                } else {
-                    const errorText = await res.text();
-                    if (errorText) message = errorText;
+                const errorText = await res.text();
+                if (errorText) {
+                    try {
+                        const parsed = JSON.parse(errorText);
+                        message = parsed.errorMessage || parsed.error || message;
+                    } catch (_) {
+                        message = errorText;
+                    }
                 }
             } catch (_) {
                 // Ignore parse errors and keep fallback message
@@ -1189,12 +1260,19 @@ async function handleDownloadClick(e) {
 
         // Cleanup
         setTimeout(() => {
-            document.body.removeChild(a);
+            if (document.body.contains(a)) document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }, 100);
     } catch (err) {
         console.error('Download error:', err);
-        alert(err.message || 'Download failed. Please try again.');
+        const errMsg = err?.message || '';
+        // If file exceeded serverless size or network failed, fallback directly to Google Drive download
+        if (errMsg.includes('ResponseSizeTooLarge') || errMsg.includes('payload size') || errMsg.includes('Failed to fetch')) {
+            const directUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download`;
+            window.open(directUrl, '_blank', 'noopener,noreferrer');
+            return;
+        }
+        alert(errMsg || 'Download failed. Please try again.');
     } finally {
         // Restore button state
         btn.innerHTML = originalHTML;

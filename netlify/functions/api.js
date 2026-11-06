@@ -913,6 +913,31 @@ app.get('/api/download/:fileId', async (req, res) => {
             return;
         }
 
+        const fileSizeBytes = Number.parseInt(meta.data.size, 10);
+        if (Number.isFinite(fileSizeBytes) && fileSizeBytes > FUNCTION_MAX_RESPONSE_BYTES) {
+            const directDownloadUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download`;
+            const fallbackDownloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+            const viewUrl = `https://drive.google.com/file/d/${fileId}/view`;
+
+            // If requested via fetch / AJAX, respond with JSON so the browser can trigger client-side download without CORS error
+            const acceptsJson = req.headers.accept?.includes('application/json') || req.headers['x-requested-with'] === 'XMLHttpRequest';
+            if (acceptsJson) {
+                res.status(200).json({
+                    success: true,
+                    oversized: true,
+                    downloadUrl: directDownloadUrl,
+                    fallbackUrl: fallbackDownloadUrl,
+                    viewUrl,
+                    fileName: meta.data.name,
+                    size: fileSizeBytes
+                });
+                return;
+            }
+
+            res.redirect(302, directDownloadUrl);
+            return;
+        }
+
         const response = await driveClient.files.get(
             { fileId, alt: 'media', supportsAllDrives: true },
             { responseType: 'stream' }
