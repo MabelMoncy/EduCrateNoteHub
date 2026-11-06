@@ -205,7 +205,7 @@ app.use(helmet({
             scriptSrc: ["'self'", 'https://www.gstatic.com'],
             styleSrc: ["'self'", "'unsafe-inline'"],
             imgSrc: ["'self'", 'data:', 'https:'],
-            connectSrc: ["'self'", 'https://*.googleapis.com', 'https://securetoken.googleapis.com'],
+            connectSrc: ["'self'", 'https://*.googleapis.com', 'https://securetoken.googleapis.com', 'https://api.web3forms.com'],
             frameSrc: ['https://drive.google.com', 'https://accounts.google.com', 'https://www.youtube.com', 'https://youtube.com'],
             objectSrc: ["'none'"],
             upgradeInsecureRequests: []
@@ -213,6 +213,8 @@ app.use(helmet({
     },
     crossOriginEmbedderPolicy: false
 }));
+
+app.use(express.json({ limit: '100kb' }));
 
 app.use(createRateLimiter({
     windowMs: 60000,
@@ -445,6 +447,70 @@ app.get('/api/folders', async (req, res) => {
     } catch (error) {
         console.error('Get folders error:', error.message);
         res.status(500).json({ success: false, error: 'Failed to retrieve folders' });
+    }
+});
+
+app.post('/api/feedback', async (req, res) => {
+    try {
+        const { name, email, category, message } = req.body || {};
+        const trimmedCategory = typeof category === 'string' ? category.trim() : '';
+        const trimmedMessage = typeof message === 'string' ? message.trim() : '';
+
+        if (!trimmedCategory) {
+            res.status(400).json({ success: false, error: 'Feedback category is required.' });
+            return;
+        }
+
+        const validCategories = [
+            'Suggest a new feature',
+            'Improve an existing feature',
+            'Report a mistake / bug',
+            'General enquiry'
+        ];
+        if (!validCategories.includes(trimmedCategory)) {
+            res.status(400).json({ success: false, error: 'Invalid feedback category.' });
+            return;
+        }
+
+        if (!trimmedMessage || trimmedMessage.length < 3) {
+            res.status(400).json({ success: false, error: 'Please enter a valid message (at least 3 characters).' });
+            return;
+        }
+
+        const accessKey = (process.env.WEB_THREE_FORM_KEY || '59b7bc7b-da8b-400a-bcf1-4357d6e3e81a').trim();
+        const trimmedName = typeof name === 'string' && name.trim() ? name.trim().slice(0, 100) : 'EduCrate Student';
+        const trimmedEmail = typeof email === 'string' && email.trim() ? email.trim().slice(0, 100) : '';
+
+        const payload = {
+            access_key: accessKey,
+            name: trimmedName,
+            email: trimmedEmail || 'no-reply@web3forms.com',
+            replyto: trimmedEmail || 'no-reply@web3forms.com',
+            subject: `[EduCrate Feedback] ${trimmedCategory}`,
+            category: trimmedCategory,
+            message: trimmedMessage.slice(0, 5000),
+            from_name: 'EduCrate Support & Feedback'
+        };
+
+        const response = await fetch('https://api.web3forms.com/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        if (response.ok && data.success) {
+            res.json({ success: true, message: 'Feedback sent successfully! Thank you for helping us improve.' });
+        } else {
+            console.error('Web3Forms returned failure:', data);
+            res.status(502).json({ success: false, error: data.message || 'Feedback provider rejected the submission.' });
+        }
+    } catch (error) {
+        console.error('Feedback submission error:', error.message);
+        res.status(500).json({ success: false, error: 'Failed to submit feedback. Please try again later.' });
     }
 });
 
