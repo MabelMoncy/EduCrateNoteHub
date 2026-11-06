@@ -97,14 +97,14 @@ function getStorageTree() {
         if (Date.now() - parsed.timestamp < TREE_STORAGE_TTL && parsed.data) {
             return parsed.data;
         }
-    } catch (_) {}
+    } catch (_) { }
     return null;
 }
 
 function setStorageTree(data) {
     try {
         sessionStorage.setItem(TREE_STORAGE_KEY, JSON.stringify({ timestamp: Date.now(), data }));
-    } catch (_) {}
+    } catch (_) { }
 }
 
 function getStorageFolder(id) {
@@ -115,20 +115,20 @@ function getStorageFolder(id) {
         if (Date.now() - parsed.timestamp < FOLDER_STORAGE_TTL && parsed.data) {
             return parsed.data;
         }
-    } catch (_) {}
+    } catch (_) { }
     return null;
 }
 
 function setStorageFolder(id, data) {
     try {
         sessionStorage.setItem(FOLDER_STORAGE_PREFIX + id, JSON.stringify({ timestamp: Date.now(), data }));
-    } catch (_) {}
+    } catch (_) { }
 }
 
 function removeStorageFolder(id) {
     try {
         sessionStorage.removeItem(FOLDER_STORAGE_PREFIX + id);
-    } catch (_) {}
+    } catch (_) { }
 }
 
 function getCachedSearchResults(query) {
@@ -182,6 +182,11 @@ function buildAppUrl(folderId, fileId) {
 function replaceUrlState(folderId, fileId) {
     const url = buildAppUrl(folderId, fileId);
     history.replaceState(history.state, '', url);
+}
+
+function pushUrlState(folderId, fileId) {
+    const url = buildAppUrl(folderId, fileId);
+    history.pushState({ folderId, fileId }, '', url);
 }
 
 function pushFileState(folderId, fileId) {
@@ -389,9 +394,8 @@ function setupEventListeners() {
         });
     }
 
-    const logoLink = elements.logoContainer ? elements.logoContainer.querySelector('a') : null;
-    if (logoLink) {
-        logoLink.addEventListener('click', (e) => {
+    if (elements.logoContainer) {
+        elements.logoContainer.addEventListener('click', (e) => {
             e.preventDefault();
             goHome();
         });
