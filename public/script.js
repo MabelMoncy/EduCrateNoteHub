@@ -41,6 +41,14 @@ function escapeHtml(text) {
 // Natural sort function for proper alphabetical + numerical ordering
 // Handles: "Module 1", "Module 2", "Module 10" correctly
 const naturalCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+/**
+ * Compares two objects by their name property using natural alphanumeric ordering.
+ * Correctly sorts numbered sequences such as "Module 1", "Module 2", "Module 10".
+ *
+ * @param {{ name: string }} a - First item with a name property.
+ * @param {{ name: string }} b - Second item with a name property.
+ * @returns {number} Negative if a < b, positive if a > b, 0 if equal.
+ */
 function naturalSort(a, b) {
     return naturalCollator.compare(a.name, b.name);
 }
@@ -461,6 +469,12 @@ function setupEventListeners() {
 
 window.goHome = goHome;
 
+/**
+ * Resets the application state and navigates back to the welcome/home screen.
+ * Closes any open modals, hides folder headers, clears file grids, and stops polling.
+ *
+ * @param {boolean} [pushState=true] - Whether to push a new browser history entry.
+ */
 function goHome(pushState = true) {
     if (!elements.pdfModal.classList.contains('hidden')) {
         closePdf(true);
@@ -474,7 +488,6 @@ function goHome(pushState = true) {
     currentFolderName = null;
     updateActiveFolderButton();
     stopFilePolling();
-    setSortVisibility(false);
     elements.contentHeader.classList.add('hidden');
     elements.filesGrid.innerHTML = '';
     elements.emptyState.classList.add('hidden');
@@ -636,6 +649,12 @@ async function pollFolderTree() {
     } catch (e) { console.error('Tree poll error:', e); }
 }
 
+/**
+ * Periodically polls the active folder contents from the server and re-renders if changes occur.
+ * Files are rendered in natural alphanumeric sort order.
+ *
+ * @returns {Promise<void>}
+ */
 async function pollFiles() {
     if (!currentFolderId) return;
     try {
@@ -856,6 +875,16 @@ function handleTreeClick(e) {
     selectFolder(toggleBtn.dataset.folderId, toggleBtn.dataset.folderName);
 }
 
+/**
+ * Loads and displays the contents of a selected folder by its ID.
+ * Renders folders and files using natural sort order and updates the browser history and breadcrumbs.
+ *
+ * @param {string} id - The folder ID to select and fetch.
+ * @param {string} name - The display name of the folder.
+ * @param {object} [options={}] - Additional configuration options.
+ * @param {boolean} [options.skipUrlSync=false] - Whether to skip syncing the URL state.
+ * @returns {Promise<void>}
+ */
 async function selectFolder(id, name, options = {}) {
     currentFolderId = id; // Track for refresh
     currentFolderName = name; // Track for refresh
