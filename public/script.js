@@ -705,40 +705,125 @@ function areFilesEqual(a, b) {
     return true;
 }
 
+/**
+ * Icon rules configuration for dynamic subject categorization.
+ * Maps subjects across Semester 4 through Semester 8 (including electives and labs)
+ * to concept-tailored SVG icons based on keywords and KTU course codes.
+ */
+const SUBJECT_ICON_RULES = [
+    // 1. Labs and Practicals (Evaluated first so e.g. "ML LAB" gets a Lab Flask)
+    {
+        patterns: [/\blab\b/i, /laboratory/i, /practical/i, /workshop/i, /\bpccsl/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 2v5.5L4.4 18.2A2 2 0 0 0 6.1 21h11.8a2 2 0 0 0 1.7-2.8L14 7.5V2m-5 0h6m-7 12h8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    },
+    // 2. Quantum Computing
+    {
+        patterns: [/quantum/i, /\bpecst638\b/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2" stroke-width="2"/><ellipse cx="12" cy="12" rx="9" ry="3.5" transform="rotate(30 12 12)" stroke-width="2"/><ellipse cx="12" cy="12" rx="9" ry="3.5" transform="rotate(-30 12 12)" stroke-width="2"/></svg>'
+    },
+    // 3. Bioinformatics
+    {
+        patterns: [/bioinformatics/i, /\bpecst743\b/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="m8 3 4 4 4-4M8 21l4-4 4 4M4 8l16 0M4 16l16 0M9 8a5 5 0 0 0 6 8M15 8a5 5 0 0 1-6 8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    },
+    // 4. Natural Language Processing, Audio & Prompt Engineering
+    {
+        patterns: [/\bnlp\b/i, /natural\s*language/i, /speech/i, /audio\s*processing/i, /prompt\s*engineering/i, /\bpecst862\b/i, /\bpecst866\b/i, /\bpecst868\b/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 9h8m-8 4h5" stroke-width="2" stroke-linecap="round"/></svg>'
+    },
+    // 5. Hardware, Microcontrollers, Embedded & IoT
+    {
+        patterns: [/micro\s*controller/i, /microprocessor/i, /microcontrollers/i, /\biot\b/i, /internet\s*of\s*things/i, /\bvlsi\b/i, /embedded/i, /architecture/i, /\bcoa\b/i, /\bpbcst504\b/i, /\bpecst415\b/i, /\bpecst528\b/i, /\bpecst746\b/i, /\bpecst755\b/i, /\boecst834\b/i, /\bpbcst404\b/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2" stroke-width="2"/><path d="M9 1v4M15 1v4M9 19v4M15 19v4M20 9h3M20 15h3M1 9h4M1 15h4" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="2" stroke-width="2"/></svg>'
+    },
+    // 6. Artificial Intelligence & Machine Learning
+    {
+        patterns: [/\bai\b/i, /\bml\b/i, /artificial/i, /machine\s*learning/i, /deep\s*learning/i, /soft\s*computing/i, /pattern\s*recognition/i, /fuzzy/i, /\bpecst503\b/i, /\bpecst522\b/i, /\bpecst632\b/i, /\bpecst752\b/i, /\bpecst753\b/i, /\boecst614\b/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 3a3 3 0 0 0-3 3v1a3 3 0 0 0 0 6v1a3 3 0 0 0 4.5 2.6M15 3a3 3 0 0 1 3 3v1a3 3 0 0 1 0 6v1a3 3 0 0 1-4.5 2.6" stroke-width="2" stroke-linecap="round"/><path d="M12 5v14M8 9h2M14 9h2M8 15h2M14 15h2" stroke-width="2" stroke-linecap="round"/></svg>'
+    },
+    // 7. Algorithms & Data Structures (DAA, DSA, Graph, Parallel, etc.)
+    {
+        patterns: [/\bdaa\b/i, /\bdsa\b/i, /algorithm/i, /data\s*structure/i, /tcs/i, /\bpccst502\b/i, /\bpecst495\b/i, /\bpecst595\b/i, /\bpecst639\b/i, /\bpecst749\b/i, /\bpecst759\b/i, /\bpecst785\b/i, /\boecst611\b/i, /\boecst831\b/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="3" stroke-width="2"/><circle cx="5" cy="19" r="3" stroke-width="2"/><circle cx="19" cy="19" r="3" stroke-width="2"/><path d="M12 8v4m0 0L5 16m7-4l7 4" stroke-width="2" stroke-linecap="round"/></svg>'
+    },
+    // 8. Computer Networks & Wireless Communication
+    {
+        patterns: [/network/i, /\bcn\b/i, /wireless/i, /data\s*communication/i, /telecom/i, /\bpccst501\b/i, /\bpecst633\b/i, /\bpecst751\b/i, /\boecst612\b/i, /\boecst724\b/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0M8.5 16a6 6 0 0 1 7 0M12 20h.01" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 8.82a16 16 0 0 1 20 0" stroke-width="2" stroke-linecap="round"/></svg>'
+    },
+    // 9. Cybersecurity, Privacy & Digital Forensics
+    {
+        patterns: [/security/i, /cyber/i, /forensic/i, /\bpbcst604\b/i, /\bpecst419\b/i, /\bpecst744\b/i, /\bpecst754\b/i, /\bpecst863\b/i, /\boecst721\b/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 3 20 7v5c0 5-3.4 8-8 9-4.6-1-8-4-8-9V7l8-4Z" stroke-width="2" stroke-linejoin="round"/><path d="m9.5 12 1.7 1.7 3.8-4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    },
+    // 10. Cryptography & Blockchain
+    {
+        patterns: [/crypto/i, /blockchain/i, /coding\s*theory/i, /\bpecst414\b/i, /\bpecst637\b/i, /\bpecst747\b/i, /\boecst613\b/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2" stroke-width="2"/><circle cx="12" cy="16" r="1.5" stroke-width="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4" stroke-width="2" stroke-linecap="round"/></svg>'
+    },
+    // 11. Databases, Data Mining & Storage Systems
+    {
+        patterns: [/\bdbms\b/i, /database/i, /data\s*mining/i, /data\s*compression/i, /data\s*analytics/i, /storage/i, /\bpccst402\b/i, /\bpecst523\b/i, /\bpecst524\b/i, /\bpecst525\b/i, /\bpecst634\b/i, /\bpecst867\b/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="7" ry="3" stroke-width="2"/><path d="M5 5v6c0 1.66 3.13 3 7 3s7-1.34 7-3V5" stroke-width="2" stroke-linecap="round"/><path d="M5 11v6c0 1.66 3.13 3 7 3s7-1.34 7-3v-6" stroke-width="2" stroke-linecap="round"/></svg>'
+    },
+    // 12. Operating Systems & Computing Systems
+    {
+        patterns: [/\bos\b/i, /operating\s*system/i, /real\s*time\s*system/i, /high\s*performance/i, /computing\s*system/i, /\bpccst403\b/i, /\bpccst602\b/i, /\bpecst748\b/i, /\bpecst757\b/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2" stroke-width="2"/><path d="M8 20h8M12 16v4" stroke-width="2" stroke-linecap="round"/><path d="m7 8 2 2-2 2M12 12h4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    },
+    // 13. Compilers & Programming Languages
+    {
+        patterns: [/compiler/i, /\bcd\b/i, /automata/i, /\btoc\b/i, /programming\s*language/i, /formal\s*method/i, /functional\s*programming/i, /\boop\b/i, /\bpccst601\b/i, /\bpecst413\b/i, /\bpecst741\b/i, /\bpecst758\b/i, /\boecst615\b/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="m14 4-4 16" stroke-width="2" stroke-linecap="round"/></svg>'
+    },
+    // 14. Graphics, Computer Vision & Multimedia
+    {
+        patterns: [/graphic/i, /image\s*processing/i, /vision/i, /multimedia/i, /interaction\s*design/i, /\bpecst527\b/i, /\bpecst636\b/i, /\bpecst745\b/i, /\bpecst865\b/i, /\boecst835\b/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/><circle cx="15" cy="9" r="1.5" fill="currentColor"/><circle cx="15" cy="14" r="1.5" fill="currentColor"/><circle cx="8" cy="14" r="1.5" fill="currentColor"/></svg>'
+    },
+    // 15. Cloud Computing
+    {
+        patterns: [/cloud/i, /\bpecst635\b/i, /\boecst722\b/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 13v6m-3-3 3 3 3-3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    },
+    // 16. Software Engineering, Management & Testing
+    {
+        patterns: [/software/i, /project\s*management/i, /\bspm\b/i, /\bse\b/i, /testing/i, /\bpecst411\b/i, /\bpecst521\b/i, /\bpecst631\b/i, /\bpecst861\b/i, /\boecst723\b/i, /\boecst833\b/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1" stroke-width="2"/><rect x="4" y="4" width="16" height="18" rx="2" stroke-width="2"/><path d="m9 12 2 2 4-4m-6 6h6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    },
+    // 17. Web & Mobile App Development
+    {
+        patterns: [/web/i, /mobile/i, /android/i, /\bpecst695\b/i, /\bpecst742\b/i, /\boecst725\b/i, /\boecst832\b/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="14" rx="2" stroke-width="2"/><path d="M3 8h18M7 5.5h.01M10 5.5h.01M14 19h5a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    },
+    // 18. Mathematics, Economics & Engineering Sciences
+    {
+        patterns: [/mathematics/i, /\bmath\b/i, /geometry/i, /economic/i, /ethics/i, /sustainable/i, /game\s*theory/i, /complexity/i, /number\s*theory/i, /signal/i, /\bgamat401\b/i, /\buchut346\b/i, /\buchut347\b/i, /\bpecst416\b/i, /\bpecst418\b/i, /\bpecst753\b/i, /\bpecst795\b/i, /\bpecst864\b/i, /\bpecst869\b/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 4H6l7 8-7 8h12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 9h-4m4 6h-4" stroke-width="2" stroke-linecap="round"/></svg>'
+    },
+    // 19. Syllabus & Question Papers
+    {
+        patterns: [/syllabus/i, /question\s*paper/i, /\bpyq\b/i, /model/i],
+        svg: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="2" stroke-linejoin="round"/><path d="M14 2v6h6M16 13H8m8 4H8m2-8H8" stroke-width="2" stroke-linecap="round"/></svg>'
+    }
+];
+
+const DEFAULT_SUBJECT_ICON_SVG = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke-width="2" stroke-linecap="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" stroke-width="2" stroke-linejoin="round"/></svg>';
+
+/**
+ * Returns a concept-tailored SVG icon string for a given subject or folder name.
+ * Uses pattern matching against subject names, course codes, and domain concepts.
+ *
+ * @param {string} [name=''] - Name of the subject or folder.
+ * @returns {string} Safe SVG markup string representing the subject.
+ */
 function getSubjectIconSvg(name = '') {
-    const normalizedName = name.toLowerCase();
-    const iconClass = 'w-5 h-5';
-
-    if (normalizedName.includes('dbms') || normalizedName.includes('database')) {
-        return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="7" ry="3" stroke-width="2"/><path d="M5 5v6c0 1.66 3.13 3 7 3s7-1.34 7-3V5" stroke-width="2" stroke-linecap="round"/><path d="M5 11v6c0 1.66 3.13 3 7 3s7-1.34 7-3v-6" stroke-width="2" stroke-linecap="round"/></svg>';
+    if (!name || typeof name !== 'string') {
+        return DEFAULT_SUBJECT_ICON_SVG;
     }
-
-    if (normalizedName.includes('operating') || normalizedName === 'os' || normalizedName.includes(' os')) {
-        return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2" stroke-width="2"/><path d="M8 20h8M12 16v4" stroke-width="2" stroke-linecap="round"/><path d="M8 8h.01M11 8h.01M14 8h.01" stroke-width="2" stroke-linecap="round"/></svg>';
-    }
-
-    if (normalizedName.includes('coa') || normalizedName.includes('architecture')) {
-        return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2" stroke-width="2"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 15h3M1 9h3M1 15h3" stroke-width="2" stroke-linecap="round"/><path d="M10 10h4v4h-4z" stroke-width="2"/></svg>';
-    }
-
-    if (normalizedName.includes('dsa') || normalizedName.includes('data structure') || normalizedName.includes('algorithm')) {
-        return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 8 4 12l4 4M16 8l4 4-4 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="m14 5-4 14" stroke-width="2" stroke-linecap="round"/></svg>';
-    }
-
-    if (normalizedName.includes('network')) {
-        return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0M8.5 16a6 6 0 0 1 7 0M12 20h.01" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 8.82a16 16 0 0 1 20 0" stroke-width="2" stroke-linecap="round"/></svg>';
-    }
-
-    if (normalizedName.includes('cyber') || normalizedName.includes('security')) {
-        return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 3 20 7v5c0 5-3.4 8-8 9-4.6-1-8-4-8-9V7l8-4Z" stroke-width="2" stroke-linejoin="round"/><path d="m9.5 12 1.7 1.7 3.8-4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    }
-
-    if (normalizedName.includes('ai') || normalizedName.includes('ml') || normalizedName.includes('machine') || normalizedName.includes('artificial')) {
-        return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 3a3 3 0 0 0-3 3v1a3 3 0 0 0 0 6v1a3 3 0 0 0 4.5 2.6M15 3a3 3 0 0 1 3 3v1a3 3 0 0 1 0 6v1a3 3 0 0 1-4.5 2.6" stroke-width="2" stroke-linecap="round"/><path d="M12 5v14M8 9h2M14 9h2M8 15h2M14 15h2" stroke-width="2" stroke-linecap="round"/></svg>';
-    }
-
-    // Default book icon
-    return '<svg class="' + iconClass + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke-width="2" stroke-linecap="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" stroke-width="2" stroke-linejoin="round"/></svg>';
+    const cleanName = name.trim();
+    const matchedRule = SUBJECT_ICON_RULES.find(rule => rule.patterns.some(pattern => pattern.test(cleanName)));
+    return matchedRule ? matchedRule.svg : DEFAULT_SUBJECT_ICON_SVG;
 }
 
 function findNodeInTree(tree, id) {
