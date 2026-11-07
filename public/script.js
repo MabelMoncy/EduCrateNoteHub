@@ -6,7 +6,7 @@ let activeSearchIndex = -1;
 let isMobile = window.innerWidth < 768;
 let currentFolderId = null; // Track current folder for refresh
 let currentFolderName = null; // Track current folder name
-let currentSortOrder = 'newToOld'; // Date modified sort order
+// Files are always sorted alphabetically + numerically (natural sort)
 let folderPollTimer = null; // Auto-poll timer for folders
 let filePollTimer = null; // Auto-poll timer for files
 let pdfLoadFallbackTimer = null; // Fallback timer when inline PDF stream is slow/unavailable
@@ -75,8 +75,7 @@ const elements = {
     browseSubjectsBtn: document.getElementById('browseSubjectsBtn'),
     themeColorMeta: document.querySelector('meta[name="theme-color"]'),
     lcpImagePreload: document.getElementById('lcpImagePreload'),
-    sortContainer: document.getElementById('sortContainer'),
-    sortSelect: document.getElementById('sortSelect'),
+    // sortContainer and sortSelect removed — files sorted alphabetically always
     backToHomeBtn: document.getElementById('backToHomeBtn'),
     navHomeBtn: document.getElementById('navHomeBtn'),
     openFeedbackBtn: document.getElementById('openFeedbackBtn'),
@@ -295,9 +294,7 @@ function setupEventListeners() {
     elements.searchInput.addEventListener('keydown', handleSearchKeydown);
     elements.searchInput.addEventListener('focus', handleSearchFocus, { passive: true });
 
-    if (elements.sortSelect) {
-        elements.sortSelect.addEventListener('change', handleSortChange, { passive: true });
-    }
+    // Sort dropdown removed — natural alphabetical sort is always used
 
     // Keyboard shortcut to close PDF or Feedback viewer
     document.addEventListener('keydown', (e) => {
@@ -656,7 +653,7 @@ async function pollFiles() {
                 cachedFiles[currentFolderId] = { folders: newFolders, files: newFiles, breadcrumbs };
                 setStorageFolder(currentFolderId, cachedFiles[currentFolderId]);
                 if (newFiles.length > 0 || newFolders.length > 0) {
-                    renderFolderContents(newFolders, sortFilesByModified(newFiles));
+                    renderFolderContents(newFolders, [...newFiles].sort(naturalSort));
                     elements.emptyState.classList.add('hidden');
                 } else {
                     elements.filesGrid.innerHTML = '';
@@ -687,34 +684,6 @@ function areFilesEqual(a, b) {
         ) return false;
     }
     return true;
-}
-
-function getModifiedTimestamp(file) {
-    const ts = Date.parse(file?.modifiedTime || '');
-    return Number.isFinite(ts) ? ts : 0;
-}
-
-function sortFilesByModified(files, order = currentSortOrder) {
-    const direction = order === 'oldToNew' ? 1 : -1;
-    return [...files].sort((a, b) => {
-        const timeDiff = getModifiedTimestamp(a) - getModifiedTimestamp(b);
-        if (timeDiff !== 0) return timeDiff * direction;
-        return naturalSort(a, b);
-    });
-}
-
-function handleSortChange(e) {
-    currentSortOrder = e.target.value === 'oldToNew' ? 'oldToNew' : 'newToOld';
-
-    if (currentFolderId && cachedFiles[currentFolderId]) {
-        const cache = cachedFiles[currentFolderId];
-        renderFolderContents(cache.folders, sortFilesByModified(cache.files));
-    }
-}
-
-function setSortVisibility(visible) {
-    if (!elements.sortContainer) return;
-    elements.sortContainer.classList.toggle('hidden', !visible);
 }
 
 function getSubjectIconSvg(name = '') {
@@ -893,10 +862,6 @@ async function selectFolder(id, name, options = {}) {
     updateActiveFolderButton();
     elements.welcomeState.classList.add('hidden');
     elements.contentHeader.classList.remove('hidden');
-    setSortVisibility(true);
-    if (elements.sortSelect) {
-        elements.sortSelect.value = currentSortOrder;
-    }
     elements.contentTitle.textContent = name;
     document.title = `${name} | EduCrate CS2 Notes`;
 
@@ -924,7 +889,7 @@ async function selectFolder(id, name, options = {}) {
         const cache = cachedFiles[id];
         elements.contentTitle.textContent = cache.folderName || name;
         document.title = `${cache.folderName || name} | EduCrate CS2 Notes`;
-        renderFolderContents(cache.folders, sortFilesByModified(cache.files));
+        renderFolderContents(cache.folders, [...cache.files].sort(naturalSort));
         renderBreadcrumbs(cache.breadcrumbs);
         // Start polling after initial render is done
         startFilePolling();
@@ -941,7 +906,7 @@ async function selectFolder(id, name, options = {}) {
             if (id === currentFolderId) {
                 elements.contentTitle.textContent = folderName;
                 document.title = `${folderName} | EduCrate CS2 Notes`;
-                renderFolderContents(folders, sortFilesByModified(files));
+                renderFolderContents(folders, [...files].sort(naturalSort));
                 renderBreadcrumbs(breadcrumbs);
                 if (folders.length === 0 && files.length === 0) {
                     elements.emptyState.classList.remove('hidden');
