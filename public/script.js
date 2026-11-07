@@ -1068,10 +1068,17 @@ function renderSkeletons() {
     ).join('');
 }
 
+/**
+ * Generates the HTML card markup for a folder item displayed in the main content grid.
+ * Dynamically uses the concept-tailored icon associated with the subject/folder.
+ *
+ * @param {{ id: string, name: string }} folder - The folder object with id and name.
+ * @returns {string} HTML markup string for the folder card.
+ */
 function buildFolderCardHtml(folder) {
     return '<div class="folder-card" data-folder-id="' + escapeHtml(folder.id) + '" data-folder-name="' + escapeHtml(folder.name) + '">' +
         '<div class="folder-card-icon">' +
-        '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>' +
+        getSubjectIconSvg(folder.name) +
         '</div>' +
         '<div class="folder-card-name">' + escapeHtml(folder.name) + '</div>' +
         '</div>';
