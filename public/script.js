@@ -203,9 +203,21 @@ function buildAppUrl(folderId, fileId) {
     return query ? `${window.location.pathname}?${query}` : window.location.pathname;
 }
 
+/**
+ * Updates the browser address bar and history state without creating a new history entry.
+ *
+ * @param {string|null} folderId - The active folder ID.
+ * @param {string|null} fileId - The active file ID, or null if no file is open.
+ * @returns {void}
+ */
 function replaceUrlState(folderId, fileId) {
     const url = buildAppUrl(folderId, fileId);
-    history.replaceState(history.state, '', url);
+    const newState = { ...(history.state || {}), folderId, fileId };
+    if (!fileId) {
+        delete newState.fileId;
+        delete newState.pdfOpen;
+    }
+    history.replaceState(newState, '', url);
 }
 
 function pushUrlState(folderId, fileId) {
@@ -282,7 +294,11 @@ function setupEventListeners() {
     }, { passive: true });
 
     elements.themeToggle.addEventListener('click', toggleTheme, { passive: true });
-    elements.closePdfBtn.addEventListener('click', closePdf, { passive: true });
+    elements.closePdfBtn.addEventListener('click', () => closePdf(false), { passive: true });
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    if (modalBackdrop) {
+        modalBackdrop.addEventListener('click', () => closePdf(false), { passive: true });
+    }
 
     // Download button - uses fetch+blob to force real download on all devices
     elements.pdfDownload.addEventListener('click', handleDownloadClick);
@@ -356,7 +372,8 @@ function setupEventListeners() {
             let targetFile = cache.files.find(f => f.id === fileId);
             if (!targetFile) {
                 delete cachedFiles[folderId];
-                await selectFolder(folderId, 'Loading...', { skipUrlSync: true });
+                const resolvedName = getFolderNameById(folderId);
+                await selectFolder(folderId, resolvedName, { skipUrlSync: true });
                 cache = cachedFiles[folderId] || { files: [] };
                 targetFile = cache.files.find(f => f.id === fileId);
             }
@@ -586,13 +603,28 @@ async function loadFolderTree() {
     } catch (e) { console.error(e); }
 }
 
+/**
+ * Ensures that a folder with the given ID is selected and its contents loaded.
+ * Resolves the folder name automatically from local caches or the navigation tree.
+ *
+ * @param {string} folderId - The ID of the folder to select.
+ * @param {object} [options={}] - Additional configuration options.
+ * @param {boolean} [options.skipUrlSync=false] - Whether to skip syncing the URL state.
+ * @returns {Promise<boolean>} True if folder selection succeeded, false otherwise.
+ */
 async function ensureFolderSelectedById(folderId, options = {}) {
     if (!folderId) return false;
     if (folderId === currentFolderId && cachedFiles[folderId]) return true;
-    await selectFolder(folderId, 'Loading...', options);
+    const resolvedName = getFolderNameById(folderId);
+    await selectFolder(folderId, resolvedName, options);
     return true;
 }
 
+/**
+ * Restores folder selection and active PDF preview based on current query parameters.
+ *
+ * @returns {Promise<void>}
+ */
 async function hydrateFromUrl() {
     const { folderId, fileId } = getUrlState();
     if (!folderId) return;
@@ -607,7 +639,8 @@ async function hydrateFromUrl() {
         if (!targetFile) {
             delete cachedFiles[folderId];
             removeStorageFolder(folderId);
-            await selectFolder(folderId, 'Loading...', { skipUrlSync: true });
+            const resolvedName = getFolderNameById(folderId);
+            await selectFolder(folderId, resolvedName, { skipUrlSync: true });
             const refreshed = cachedFiles[folderId] || { files: [] };
             targetFile = refreshed.files.find(f => f.id === fileId);
         }
@@ -651,7 +684,7 @@ async function pollFolderTree() {
 
 /**
  * Periodically polls the active folder contents from the server and re-renders if changes occur.
- * Files are rendered in natural alphanumeric sort order.
+ * Files are rendered in natural alphanumeric sort order and folder metadata is preserved.
  *
  * @returns {Promise<void>}
  */
@@ -667,9 +700,22 @@ async function pollFiles() {
             const newFolders = data.data.folders || [];
             const breadcrumbs = data.data.breadcrumbs || [];
             const currentCache = cachedFiles[currentFolderId] || { files: [], folders: [] };
+            const resolvedFolderName = (data.data.folderName && data.data.folderName !== 'Loading...')
+                ? data.data.folderName
+                : ((currentCache.folderName && currentCache.folderName !== 'Loading...')
+                    ? currentCache.folderName
+                    : ((currentFolderName && currentFolderName !== 'Loading...')
+                        ? currentFolderName
+                        : getFolderNameById(currentFolderId)));
 
-            if (!areFilesEqual(currentCache.files, newFiles) || !areFoldersEqual(currentCache.folders, newFolders)) {
-                cachedFiles[currentFolderId] = { folders: newFolders, files: newFiles, breadcrumbs };
+            if (resolvedFolderName && (elements.contentTitle.textContent === 'Loading...' || !elements.contentTitle.textContent)) {
+                elements.contentTitle.textContent = resolvedFolderName;
+                currentFolderName = resolvedFolderName;
+                document.title = `${resolvedFolderName} | EduCrate CS2 Notes`;
+            }
+
+            if (!areFilesEqual(currentCache.files, newFiles) || !areFoldersEqual(currentCache.folders, newFolders) || currentCache.folderName !== resolvedFolderName) {
+                cachedFiles[currentFolderId] = { folders: newFolders, files: newFiles, breadcrumbs, folderName: resolvedFolderName };
                 setStorageFolder(currentFolderId, cachedFiles[currentFolderId]);
                 if (newFiles.length > 0 || newFolders.length > 0) {
                     renderFolderContents(newFolders, [...newFiles].sort(naturalSort));
@@ -826,16 +872,59 @@ function getSubjectIconSvg(name = '') {
     return matchedRule ? matchedRule.svg : DEFAULT_SUBJECT_ICON_SVG;
 }
 
+/**
+ * Recursively searches a folder tree or node list for a node matching the specified ID.
+ *
+ * @param {object|Array<object>} tree - The root tree node or array of nodes to search.
+ * @param {string} id - The folder ID to find.
+ * @returns {object|null} The matching tree node, or null if not found.
+ */
 function findNodeInTree(tree, id) {
-    if (!tree) return null;
+    if (!tree || !id) return null;
+    if (Array.isArray(tree)) {
+        for (const item of tree) {
+            const found = findNodeInTree(item, id);
+            if (found) return found;
+        }
+        return null;
+    }
     if (tree.id === id) return tree;
-    if (tree.children) {
+    if (Array.isArray(tree.children)) {
         for (const child of tree.children) {
             const found = findNodeInTree(child, id);
             if (found) return found;
         }
     }
     return null;
+}
+
+/**
+ * Resolves a folder's display name using available in-memory cache, session storage, or the folder tree.
+ *
+ * @param {string} id - The folder ID to resolve.
+ * @returns {string} The resolved folder name, or an empty string if unknown.
+ */
+function getFolderNameById(id) {
+    if (!id) return '';
+    if (cachedFiles[id] && cachedFiles[id].folderName && cachedFiles[id].folderName !== 'Loading...') {
+        return cachedFiles[id].folderName;
+    }
+    const storage = getStorageFolder(id);
+    if (storage && storage.folderName && storage.folderName !== 'Loading...') {
+        return storage.folderName;
+    }
+    const tree = cachedTree || getStorageTree();
+    const node = findNodeInTree(tree, id);
+    if (node && node.name && node.name !== 'Loading...') {
+        return node.name;
+    }
+    if (storage && Array.isArray(storage.breadcrumbs) && storage.breadcrumbs.length > 0) {
+        const last = storage.breadcrumbs[storage.breadcrumbs.length - 1];
+        if (last && last.name && last.name !== 'Loading...') {
+            return last.name;
+        }
+    }
+    return '';
 }
 
 function buildTreeHtml(node, level = 0, isInitial = false) {
@@ -965,19 +1054,26 @@ function handleTreeClick(e) {
  * Renders folders and files using natural sort order and updates the browser history and breadcrumbs.
  *
  * @param {string} id - The folder ID to select and fetch.
- * @param {string} name - The display name of the folder.
+ * @param {string} [name=''] - The display name of the folder.
  * @param {object} [options={}] - Additional configuration options.
  * @param {boolean} [options.skipUrlSync=false] - Whether to skip syncing the URL state.
  * @returns {Promise<void>}
  */
 async function selectFolder(id, name, options = {}) {
     currentFolderId = id; // Track for refresh
-    currentFolderName = name; // Track for refresh
+    let resolvedName = (name && name !== 'Loading...') ? name : getFolderNameById(id);
+    currentFolderName = resolvedName || ''; // Track for refresh
     updateActiveFolderButton();
     elements.welcomeState.classList.add('hidden');
     elements.contentHeader.classList.remove('hidden');
-    elements.contentTitle.textContent = name;
-    document.title = `${name} | EduCrate CS2 Notes`;
+
+    if (resolvedName) {
+        elements.contentTitle.textContent = resolvedName;
+        document.title = `${resolvedName} | EduCrate CS2 Notes`;
+    } else {
+        elements.contentTitle.textContent = 'Loading...';
+        document.title = 'Loading... | EduCrate CS2 Notes';
+    }
 
     // Remove dynamic noindex tag if it exists (for valid folders)
     const existingNoIndex = document.querySelector('meta[name="robots"][content="noindex"]');
@@ -996,18 +1092,33 @@ async function selectFolder(id, name, options = {}) {
 
     renderSkeletons();
 
+    let hasRenderedCachedContents = false;
+
     if (cachedFiles[id] || getStorageFolder(id)) {
         if (!cachedFiles[id]) {
             cachedFiles[id] = getStorageFolder(id);
         }
         const cache = cachedFiles[id];
-        elements.contentTitle.textContent = cache.folderName || name;
-        document.title = `${cache.folderName || name} | EduCrate CS2 Notes`;
+        if (!resolvedName && cache.folderName && cache.folderName !== 'Loading...') {
+            resolvedName = cache.folderName;
+        }
+        if (resolvedName) {
+            cache.folderName = resolvedName;
+            currentFolderName = resolvedName;
+            elements.contentTitle.textContent = resolvedName;
+            document.title = `${resolvedName} | EduCrate CS2 Notes`;
+            setStorageFolder(id, cache);
+        }
         renderFolderContents(cache.folders, [...cache.files].sort(naturalSort));
         renderBreadcrumbs(cache.breadcrumbs);
+        hasRenderedCachedContents = true;
         // Start polling after initial render is done
         startFilePolling();
-        return;
+
+        if (resolvedName) {
+            return;
+        }
+        // If we still do not have a real folder name, fall through to fetch from API so the title is updated
     }
 
     try {
@@ -1015,11 +1126,15 @@ async function selectFolder(id, name, options = {}) {
         const data = await res.json();
         if (data.success) {
             const { folders, files, breadcrumbs, folderName } = data.data;
-            cachedFiles[id] = { folders, files, breadcrumbs, folderName };
+            const finalFolderName = (folderName && folderName !== 'Loading...')
+                ? folderName
+                : (resolvedName || getFolderNameById(id) || 'Folder');
+            cachedFiles[id] = { folders, files, breadcrumbs, folderName: finalFolderName };
             setStorageFolder(id, cachedFiles[id]);
             if (id === currentFolderId) {
-                elements.contentTitle.textContent = folderName;
-                document.title = `${folderName} | EduCrate CS2 Notes`;
+                currentFolderName = finalFolderName;
+                elements.contentTitle.textContent = finalFolderName;
+                document.title = `${finalFolderName} | EduCrate CS2 Notes`;
                 renderFolderContents(folders, [...files].sort(naturalSort));
                 renderBreadcrumbs(breadcrumbs);
                 if (folders.length === 0 && files.length === 0) {
@@ -1030,6 +1145,33 @@ async function selectFolder(id, name, options = {}) {
             startFilePolling();
         } else {
             if (id === currentFolderId) {
+                if (hasRenderedCachedContents) {
+                    const fallbackTitle = resolvedName || getFolderNameById(id) || currentFolderName || 'Folder';
+                    currentFolderName = fallbackTitle;
+                    elements.contentTitle.textContent = fallbackTitle;
+                    document.title = `${fallbackTitle} | EduCrate CS2 Notes`;
+                } else {
+                    elements.filesGrid.innerHTML = '';
+                    elements.emptyState.classList.remove('hidden');
+                    document.title = `Folder Not Found | EduCrate CS2 Notes`;
+                    if (!document.querySelector('meta[name="robots"][content="noindex"]')) {
+                        const meta = document.createElement('meta');
+                        meta.name = 'robots';
+                        meta.content = 'noindex';
+                        document.head.appendChild(meta);
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        if (id === currentFolderId) {
+            if (hasRenderedCachedContents) {
+                const fallbackTitle = resolvedName || getFolderNameById(id) || currentFolderName || 'Folder';
+                currentFolderName = fallbackTitle;
+                elements.contentTitle.textContent = fallbackTitle;
+                document.title = `${fallbackTitle} | EduCrate CS2 Notes`;
+            } else {
                 elements.filesGrid.innerHTML = '';
                 elements.emptyState.classList.remove('hidden');
                 document.title = `Folder Not Found | EduCrate CS2 Notes`;
@@ -1039,19 +1181,6 @@ async function selectFolder(id, name, options = {}) {
                     meta.content = 'noindex';
                     document.head.appendChild(meta);
                 }
-            }
-        }
-    } catch (e) {
-        console.error(e);
-        if (id === currentFolderId) {
-            elements.filesGrid.innerHTML = '';
-            elements.emptyState.classList.remove('hidden');
-            document.title = `Folder Not Found | EduCrate CS2 Notes`;
-            if (!document.querySelector('meta[name="robots"][content="noindex"]')) {
-                const meta = document.createElement('meta');
-                meta.name = 'robots';
-                meta.content = 'noindex';
-                document.head.appendChild(meta);
             }
         }
     }
@@ -1305,6 +1434,12 @@ function openPdf(file, options = {}) {
     }
 }
 
+/**
+ * Closes the PDF modal viewer, stops active streams, and resets browser URL/history state.
+ *
+ * @param {boolean|Event} [fromPopState=false] - True if triggered by a browser popstate navigation.
+ * @returns {void}
+ */
 function closePdf(fromPopState) {
     if (pdfLoadFallbackTimer) {
         clearTimeout(pdfLoadFallbackTimer);
@@ -1316,8 +1451,9 @@ function closePdf(fromPopState) {
     elements.pdfIframe.classList.add('hidden');
     elements.pdfIframe.src = ''; // Clear iframe to stop loading/playing
 
-    // If closed via X button or Escape (not from back swipe), pop the history entry we pushed
-    if (!fromPopState) {
+    // If closed via X button, Escape, or backdrop (not from browser back), pop or reset history
+    const isFromPopState = fromPopState === true;
+    if (!isFromPopState) {
         if (history.state && history.state.pdfOpen) {
             history.back();
         } else {
@@ -1529,7 +1665,10 @@ function handleSearchKeydown(e) {
             const file = JSON.parse(target.dataset.file);
             const openWithFolder = async () => {
                 if (file.folderId && file.folderId !== currentFolderId) {
-                    await selectFolder(file.folderId, file.folderName || 'Loading...', { skipUrlSync: true });
+                    const targetFolderName = (file.folderName && file.folderName !== 'Loading...')
+                        ? file.folderName
+                        : getFolderNameById(file.folderId);
+                    await selectFolder(file.folderId, targetFolderName, { skipUrlSync: true });
                 }
                 openPdf(file);
             };
@@ -1564,7 +1703,10 @@ function handleSearchResultClick(e) {
         const file = JSON.parse(result.dataset.file);
         const openWithFolder = async () => {
             if (file.folderId && file.folderId !== currentFolderId) {
-                await selectFolder(file.folderId, file.folderName || 'Loading...', { skipUrlSync: true });
+                const targetFolderName = (file.folderName && file.folderName !== 'Loading...')
+                    ? file.folderName
+                    : getFolderNameById(file.folderId);
+                await selectFolder(file.folderId, targetFolderName, { skipUrlSync: true });
             }
             openPdf(file);
         };
