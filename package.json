@@ -5,8 +5,7 @@
   "main": "server.js",
   "scripts": {
     "build:css": "tailwindcss -i ./src/styles.css -o ./public/styles.css --minify",
-    "build:sync": "node scripts/sync-css.js",
-    "build": "npm run build:css && npm run build:sync",
+    "build": "npm run build:css",
     "start": "node server.js"
   },
   "devDependencies": {
