@@ -100,14 +100,13 @@
             });
 
         // Mark only the owner's traffic as internal
+        var configParams = {};
+
         if (isInternalUser) {
-            gtag('set', {
-                'traffic_type': 'internal'
-            });
+            configParams.traffic_type = 'internal';
         }
 
-        // Initialize Google Analytics
-        gtag('config', 'G-XR94PZY18W');
+        gtag('config', 'G-XR94PZY18W', configParams);
     </script>
 
 </head>
