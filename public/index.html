@@ -91,8 +91,25 @@
         }
 
         gtag('js', new Date());
+
+        // Check whether this browser belongs to the website owner
+        var isInternalUser = document.cookie
+            .split(';')
+            .some(function (cookie) {
+                return cookie.trim() === 'exclude_user=1';
+            });
+
+        // Mark only the owner's traffic as internal
+        if (isInternalUser) {
+            gtag('set', {
+                'traffic_type': 'internal'
+            });
+        }
+
+        // Initialize Google Analytics
         gtag('config', 'G-XR94PZY18W');
     </script>
+
 </head>
 
 <body class="min-h-screen font-sans selection:bg-primary-100 dark:selection:bg-primary-900">
