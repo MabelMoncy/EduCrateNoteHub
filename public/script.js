@@ -1092,6 +1092,8 @@ async function selectFolder(id, name, options = {}) {
 
     renderSkeletons();
 
+    let hasRenderedCachedContents = false;
+
     if (cachedFiles[id] || getStorageFolder(id)) {
         if (!cachedFiles[id]) {
             cachedFiles[id] = getStorageFolder(id);
@@ -1109,6 +1111,7 @@ async function selectFolder(id, name, options = {}) {
         }
         renderFolderContents(cache.folders, [...cache.files].sort(naturalSort));
         renderBreadcrumbs(cache.breadcrumbs);
+        hasRenderedCachedContents = true;
         // Start polling after initial render is done
         startFilePolling();
 
@@ -1142,6 +1145,33 @@ async function selectFolder(id, name, options = {}) {
             startFilePolling();
         } else {
             if (id === currentFolderId) {
+                if (hasRenderedCachedContents) {
+                    const fallbackTitle = resolvedName || getFolderNameById(id) || currentFolderName || 'Folder';
+                    currentFolderName = fallbackTitle;
+                    elements.contentTitle.textContent = fallbackTitle;
+                    document.title = `${fallbackTitle} | EduCrate CS2 Notes`;
+                } else {
+                    elements.filesGrid.innerHTML = '';
+                    elements.emptyState.classList.remove('hidden');
+                    document.title = `Folder Not Found | EduCrate CS2 Notes`;
+                    if (!document.querySelector('meta[name="robots"][content="noindex"]')) {
+                        const meta = document.createElement('meta');
+                        meta.name = 'robots';
+                        meta.content = 'noindex';
+                        document.head.appendChild(meta);
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        if (id === currentFolderId) {
+            if (hasRenderedCachedContents) {
+                const fallbackTitle = resolvedName || getFolderNameById(id) || currentFolderName || 'Folder';
+                currentFolderName = fallbackTitle;
+                elements.contentTitle.textContent = fallbackTitle;
+                document.title = `${fallbackTitle} | EduCrate CS2 Notes`;
+            } else {
                 elements.filesGrid.innerHTML = '';
                 elements.emptyState.classList.remove('hidden');
                 document.title = `Folder Not Found | EduCrate CS2 Notes`;
@@ -1151,19 +1181,6 @@ async function selectFolder(id, name, options = {}) {
                     meta.content = 'noindex';
                     document.head.appendChild(meta);
                 }
-            }
-        }
-    } catch (e) {
-        console.error(e);
-        if (id === currentFolderId) {
-            elements.filesGrid.innerHTML = '';
-            elements.emptyState.classList.remove('hidden');
-            document.title = `Folder Not Found | EduCrate CS2 Notes`;
-            if (!document.querySelector('meta[name="robots"][content="noindex"]')) {
-                const meta = document.createElement('meta');
-                meta.name = 'robots';
-                meta.content = 'noindex';
-                document.head.appendChild(meta);
             }
         }
     }
